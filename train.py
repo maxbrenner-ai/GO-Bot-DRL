@@ -41,5 +41,6 @@ while True:
         # If passes done
         if agent_frame is ...:
             succ = user_sim.check_conv_success()
+            break
 
     conv_dialogue = 0
