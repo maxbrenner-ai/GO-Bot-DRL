@@ -17,6 +17,7 @@ user_sim = UserSimulator()
 emc_0 = EMC(level=1, type=1, error_amount=0.05)
 # Init or load agent
 dqn_agent = DQNAgent()
+state_tracker = StateTracker()
 
 # Warm-Up loop
 def warmup():
@@ -58,20 +59,23 @@ def train():
         # Inner loop (by conversation)
         ep += 1
         ep_step = 0
-        user_frame = ...
         while ep_step < C['max_ep_length']:
-            # Agent chooses action given state/user_frame
-            agent_frame = dqn_agent.return_action(user_frame)
-            # Step user sim
-            next_user_frame, reward, done = user_sim.step(agent_frame)
-            # Add to memory
-            ...
+
+            # Agent takes action given state tracker's representation of dialogue
+            agent_action = dqn_agent.get_action(state_tracker.get_state())
+            # Update state tracker with the agent's action
+            state_tracker.update_state_agent(agent_action)
+            # User sim. takes action given agent action
+            user_action, reward, done, succ = user_sim.get_action(agent_action)
+            # Infuse error into semantic frame level user sim. action
+            user_error_action = emc_0.infuse_error(user_action)
+            # Update state tracker with user sim. action
+            state_tracker.update_state_user(user_error_action)
 
             ep_step += 1
 
-            # If passes done
-            if agent_frame is ...:
-                if user_sim.check_conv_success():
+            if done:
+                if succ:
                     period_succ_total += 1
                 break
 
@@ -83,8 +87,8 @@ def train():
                 dqn_agent.empty_memory()
                 succ_rate_best = succ_rate
             period_succ_total = 0
-            # Clone
-            dqn_agent.clone()
+            # Copy
+            dqn_agent.copy()
             # Train
             dqn_agent.train()
 
