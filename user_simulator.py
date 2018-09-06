@@ -7,6 +7,9 @@ class UserSimulator:
         self.pick_goal(goal_list)
         self.refresh_agenda()
 
+    def step(self, agent_frame):
+        return next_user_frame, reward, done
+
     # Randomly choose a goal from the list of available user goals
     def pick_goal(self, goal_list):
         goal_index = ...
@@ -14,15 +17,6 @@ class UserSimulator:
 
     def refresh_agenda(self):
         self.agenda.refresh()
-
-    def output_action(self, agent_frame):
-        # (if agent_frame none then start of conversation)
-        # Make action based off of agenda and goal (given agent request and current state)
-        action = ...
-        # update internal state
-        self.internal_state = ...
-        # return action picked action
-        return action
 
     def check_conv_success(self):
         if len(self.agenda.stack) != 0:

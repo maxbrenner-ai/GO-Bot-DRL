@@ -2,8 +2,9 @@ from user_simulator import UserSimulator
 from emc import EMC
 from Agents.rule_based import RuleBasedAgent
 from Agents.dqn import DQNAgent
+import constants as C
 
-MAX_DIAL_PER_CONV = 10
+MAX_EP_LENGTH = 10
 
 # Load corpus
 # Make rule based agent
@@ -17,30 +18,96 @@ emc_0 = EMC(level=1, type=1, error_amount=0.05)
 # Init or load agent
 dqn_agent = DQNAgent()
 
-# Outer Loop
-total_dialogue = 0
-while True:
-    # User sim picks goal and reset agenda
-    user_sim.reset(goal_list)
-    # Inner loop (by conversation)
-    conv_dialogue = 0
-    succ = False
-    while conv_dialogue < MAX_DIAL_PER_CONV:
-        # User sim picks action
-        user_frame = user_sim.output_action(None)
-        # Infuse error
-        user_frame = emc_0.infuse_error(user_frame)
-        # Sends to agent
-        agent_frame = dqn_agent.output_action(user_frame)
-        # agent updates policy (based on some condition)
-        dqn_agent.train()
+# Warm-Up loop
+def warmup():
+    total_step = 0
+    done_warmup = False
+    while not done_warmup:
+        # User sim picks goal and reset agenda
+        user_sim.reset(goal_list)
+        ep_step = 0
+        user_frame = ...
+        while ep_step < C['max_ep_length']:
+            # Agent chooses action given state/user_frame
+            agent_frame = dqn_agent.return_action(user_frame)
+            # Step user sim
+            next_user_frame, reward, done = user_sim.step(agent_frame)
+            # Add to memory
+            ...
 
-        total_dialogue += 1
-        conv_dialogue += 1
+            ep_step += 1
+            total_step += 1
 
-        # If passes done
-        if agent_frame is ...:
-            succ = user_sim.check_conv_success()
-            break
+            if total_step == C['warmup_mem']:
+                done_warmup = True
 
-    conv_dialogue = 0
+            # If passes done
+            if agent_frame is ... or done_warmup:
+                succ = user_sim.check_conv_success()
+                break
+
+
+# Training Loop
+def train():
+    ep = 0
+    period_succ_total = 0
+    succ_rate_best = 0.0
+    while ep < C['num_ep_train']:
+        # User sim picks goal and reset agenda
+        user_sim.reset(goal_list)
+        # Inner loop (by conversation)
+        ep += 1
+        ep_step = 0
+        user_frame = ...
+        while ep_step < C['max_ep_length']:
+            # Agent chooses action given state/user_frame
+            agent_frame = dqn_agent.return_action(user_frame)
+            # Step user sim
+            next_user_frame, reward, done = user_sim.step(agent_frame)
+            # Add to memory
+            ...
+
+            ep_step += 1
+
+            # If passes done
+            if agent_frame is ...:
+                if user_sim.check_conv_success():
+                    period_succ_total += 1
+                break
+
+        if ep % C['val_freq'] == 0:
+            # Check succ rate
+            succ_rate = period_succ_total / C['val_freq']
+            if succ_rate >= succ_rate_best and succ_rate >= C['success_rate_threshold']:
+                # Flush
+                dqn_agent.empty_memory()
+                succ_rate_best = succ_rate
+            period_succ_total = 0
+            # Clone
+            dqn_agent.clone()
+            # Train
+            dqn_agent.train()
+
+
+def test():
+    ep = 0
+    while ep < C['num_ep_test']:
+        user_sim.reset(goal_list)
+        ep += 1
+        ep_step = 0
+        while ep_step < C['max_ep_length']:
+            # Agent chooses action given state/user_frame
+            agent_frame = dqn_agent.return_action(user_frame)
+            # Step user sim
+            next_user_frame, reward, done = user_sim.step(agent_frame)
+
+            ep_step += 1
+
+            # If passes done
+            if agent_frame is ...:
+                succ = user_sim.check_conv_success()
+                break
+
+warmup()
+train()
+test()

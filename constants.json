@@ -1,0 +1,9 @@
+{
+  "max_ep_length": 10,
+  "num_ep_train": 100,
+  "num_ep_test": 10,
+  "val_freq": 5,
+  "success_rate_threshold": 0.3,
+  "warmup_mem": 100,
+  "max_mem_size": 10000
+}
