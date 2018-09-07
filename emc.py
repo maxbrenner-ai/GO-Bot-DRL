@@ -5,5 +5,5 @@ class EMC:
         self.error_amount = error_amount  # error chance [0,1]
 
     def infuse_error(self, frame):
-
+        return frame
 

@@ -3,6 +3,7 @@ from emc import EMC
 from Agents.rule_based import RuleBasedAgent
 from Agents.dqn import DQNAgent
 import constants as C
+from state_tracker import StateTracker
 
 MAX_EP_LENGTH = 10
 
@@ -27,14 +28,19 @@ def warmup():
         # User sim picks goal and reset agenda
         user_sim.reset(goal_list)
         ep_step = 0
-        user_frame = ...
         while ep_step < C['max_ep_length']:
-            # Agent chooses action given state/user_frame
-            agent_frame = dqn_agent.return_action(user_frame)
-            # Step user sim
-            next_user_frame, reward, done = user_sim.step(agent_frame)
-            # Add to memory
-            ...
+            # Agent takes action given state tracker's representation of dialogue
+            agent_action = rule_based_agent.get_action(state_tracker.get_state())
+            # Update state tracker with the agent's action
+            state_tracker.update_state_agent(agent_action)
+            # User sim. takes action given agent action
+            user_action, reward, done, succ = user_sim.get_action(agent_action)
+            # Infuse error into semantic frame level user sim. action
+            user_error_action = emc_0.infuse_error(user_action)
+            # Update state tracker with user sim. action
+            state_tracker.update_state_user(user_error_action)
+            # Add memory
+            dqn_agent.add_memory(...)
 
             ep_step += 1
             total_step += 1
@@ -43,8 +49,7 @@ def warmup():
                 done_warmup = True
 
             # If passes done
-            if agent_frame is ... or done_warmup:
-                succ = user_sim.check_conv_success()
+            if done or done_warmup:
                 break
 
 
@@ -60,7 +65,6 @@ def train():
         ep += 1
         ep_step = 0
         while ep_step < C['max_ep_length']:
-
             # Agent takes action given state tracker's representation of dialogue
             agent_action = dqn_agent.get_action(state_tracker.get_state())
             # Update state tracker with the agent's action
@@ -71,6 +75,8 @@ def train():
             user_error_action = emc_0.infuse_error(user_action)
             # Update state tracker with user sim. action
             state_tracker.update_state_user(user_error_action)
+            # Add memory
+            dqn_agent.add_memory(...)
 
             ep_step += 1
 
@@ -100,16 +106,20 @@ def test():
         ep += 1
         ep_step = 0
         while ep_step < C['max_ep_length']:
-            # Agent chooses action given state/user_frame
-            agent_frame = dqn_agent.return_action(user_frame)
-            # Step user sim
-            next_user_frame, reward, done = user_sim.step(agent_frame)
-
+            # Agent takes action given state tracker's representation of dialogue
+            agent_action = dqn_agent.get_action(state_tracker.get_state())
+            # Update state tracker with the agent's action
+            state_tracker.update_state_agent(agent_action)
+            # User sim. takes action given agent action
+            user_action, reward, done, succ = user_sim.get_action(agent_action)
+            # Infuse error into semantic frame level user sim. action
+            user_error_action = emc_0.infuse_error(user_action)
+            # Update state tracker with user sim. action
+            state_tracker.update_state_user(user_error_action)
             ep_step += 1
 
             # If passes done
-            if agent_frame is ...:
-                succ = user_sim.check_conv_success()
+            if done:
                 break
 
 warmup()
