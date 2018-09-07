@@ -14,6 +14,12 @@ class DQNAgent:
     def get_action(self, state):
 
     def add_experience(self, experience):
+        if self.memory_index == self.max_memory_size:
+            self.memory_index = 0
+        if len(self.memory) != self.max_memory_size:
+            self.memory.append(None)
+        self.memory[self.memory_index] = experience
+        self.memory_index += 1
 
     def empty_memory(self):
         self.memory = []
