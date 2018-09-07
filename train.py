@@ -40,7 +40,7 @@ def warmup():
             # Update state tracker with user sim. action
             state_tracker.update_state_user(user_error_action)
             # Add memory
-            dqn_agent.add_memory(...)
+            dqn_agent.add_experience(...)
 
             ep_step += 1
             total_step += 1
@@ -75,8 +75,8 @@ def train():
             user_error_action = emc_0.infuse_error(user_action)
             # Update state tracker with user sim. action
             state_tracker.update_state_user(user_error_action)
-            # Add memory
-            dqn_agent.add_memory(...)
+             # Add memory
+            dqn_agent.add_experience(...)
 
             ep_step += 1
 
