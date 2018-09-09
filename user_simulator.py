@@ -4,24 +4,22 @@ class UserSimulator:
         self.internal_state = ...
 
     def reset(self, goal_list):
-        self.pick_goal(goal_list)
-        self.refresh_agenda()
-
-    def step(self, agent_frame):
-        return next_user_frame, reward, done
+        self._pick_goal(goal_list)
+        self._refresh_agenda()
 
     # Randomly choose a goal from the list of available user goals
-    def pick_goal(self, goal_list):
+    def _pick_goal(self, goal_list):
         goal_index = ...
         self.goal = UserGoal()
 
-    def refresh_agenda(self):
+    def step(self, agent_frame):
+        return next_user_frame, reward, done, succ
+
+    def _refresh_agenda(self):
         self.agenda.refresh()
 
-    def check_conv_success(self):
-        if len(self.agenda.stack) != 0:
-            return False
-        # Now check constraints
+    def _reward_function(self, num):
+        return reward
 
 
 class UserGoal:
