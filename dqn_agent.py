@@ -17,6 +17,8 @@ class DQNAgent:
         self.num_actions = C['num_actions']
         self.lr = C['learning_rate']
         self.gamma = C['gamma']
+        self.num_batches = C['num_batches']
+        self.batch_size = C['batch_size']
 
         # Placeholder
         self.state_size = ...
@@ -71,10 +73,10 @@ class DQNAgent:
         self.memory_index = 0
 
     # States, actions, rewards, next_states, done
-    def train(self, batch_size, num_batches):
-        for _ in range(num_batches):
-            batch = self._sample_memory(batch_size)
-            batch_size = len(batch_size)
+    def train(self):
+        for _ in range(self.num_batches):
+            batch = self._sample_memory(self.batch_size)
+            batch_size = len(batch)
 
             states = np.array([sample[0] for sample in batch])
             next_states = np.array([self.none_state if sample[4] is True else sample[3] for sample in batch])
