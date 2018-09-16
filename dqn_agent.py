@@ -4,6 +4,8 @@ from keras.layers import Dense
 from keras.optimizers import Adam
 import random
 import numpy as np
+from dialogue_config import rule_requests, agent_actions
+
 
 # Some of code based off of https://jaromiru.com/2016/09/27/lets-make-a-dqn-theory/
 
@@ -27,6 +29,10 @@ class DQNAgent:
         self.tar_model = self._build_model()
         self.none_state = np.zeros(self.state_size)
 
+        self.possible_actions = agent_actions
+
+        self.reset()
+
     def _build_model(self):
         model = Sequential()
         model.add(Dense(24, input_dim=self.state_size, activation='relu'))
@@ -36,19 +42,39 @@ class DQNAgent:
         return model
 
     def reset(self):
-        ...
+        self.rule_current_slot_index = 0
+        self.rule_phase = 'not done'
+        self.rule_request_set = rule_requests
 
     def get_action(self, state, use_rule=False):
         if self.eps > random.random():
             return random.randint(0, self.num_actions - 1)
         else:
             if use_rule:
-                return self._rule_predict(state)
+                return self._rule_predict()
             else:
                 return np.argmax(self._dqn_predict_one(state))
 
-    def _rule_predict(self, state):
-        return ...
+    def _rule_predict(self):
+        if self.rule_current_slot_index < len(self.rule_request_set):
+            slot = self.rule_request_set[self.rule_current_slot_index]
+            self.rule_current_slot_index += 1
+            rule_response = {'intent': 'request', 'inform_slots': {}, 'request_slots': {slot: 'UNK'}}
+        elif self.rule_phase == 'not done':
+            rule_response = {'intent': "inform", 'inform_slots': {'match_found': 'PLACEHOLDER'}, 'request_slots': {}}
+            self.rule_phase = 'done'
+        elif self.rule_phase == 'done':
+            rule_response = {'intent': 'done', 'inform_slots': {}, 'request_slots': {}}
+        else:
+            assert True is False
+
+        return self._action_index(rule_response)
+
+    # For the rule policy to index the crafted response
+    def _action_index(self, response):
+        for (i, action) in enumerate(self.possible_actions):
+            if response == action:
+                return i
 
     def _dqn_predict(self, states, target=False):
         if target:
@@ -61,7 +87,7 @@ class DQNAgent:
 
     def add_experience(self, state, action, reward, next_state, done):
 
-        # Todo: have to do other stuff in here
+        assert isinstance(action, int)
 
         if len(self.memory) < self.max_memory_size:
             self.memory.append(None)

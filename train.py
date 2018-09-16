@@ -28,9 +28,9 @@ def warmup():
             # Get state tracker state
             state = state_tracker.get_state()
             # Agent takes action given state tracker's representation of dialogue
-            agent_action = dqn_agent.get_action(state, use_rule=True)
+            agent_action = dqn_agent.get_action(state)
             # Update state tracker with the agent's action
-            state_tracker.update_state_agent(agent_action)
+            agent_action = state_tracker.update_state_agent(agent_action)
             # User sim. takes action given agent action
             user_action, reward, done, succ = user_sim.step(agent_action)
             if not done:
@@ -66,11 +66,11 @@ def train():
             # Get state tracker state
             state = state_tracker.get_state()
             # Agent takes action given state tracker's representation of dialogue
-            agent_action = dqn_agent.get_action(state_tracker.get_state())
+            agent_action = dqn_agent.get_action(state)
             # Update state tracker with the agent's action
-            state_tracker.update_state_agent(agent_action)
+            agent_action = state_tracker.update_state_agent(agent_action)
             # User sim. takes action given agent action
-            user_action, reward, done, succ = user_sim.step(agent_action)  # Todo: Note that this shouldnt actually take the agent action as is
+            user_action, reward, done, succ = user_sim.step(agent_action)
             if not done:
                 # Infuse error into semantic frame level user sim. action
                 user_error_action = emc_0.infuse_error(user_action)
@@ -121,10 +121,12 @@ def test():
         ep += 1
         ep_step = 0
         while ep_step < C['max_ep_length']:
+            # Get state tracker state
+            state = state_tracker.get_state()
             # Agent takes action given state tracker's representation of dialogue
-            agent_action = dqn_agent.get_action(state_tracker.get_state())
+            agent_action = dqn_agent.get_action(state)
             # Update state tracker with the agent's action
-            state_tracker.update_state_agent(agent_action)
+            agent_action = state_tracker.update_state_agent(agent_action)
             # User sim. takes action given agent action
             user_action, reward, done, succ = user_sim.step(agent_action)
             if not done:
