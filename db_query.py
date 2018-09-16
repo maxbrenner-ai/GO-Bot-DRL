@@ -4,3 +4,5 @@ class DBQuery:
 
     def fill_inform_slots(self, inform_slots_to_fill, current_inform_slots):
         return inform_slots_to_fill
+
+    def database_results_for_agent(self, current_informs):
