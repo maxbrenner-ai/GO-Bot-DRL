@@ -12,7 +12,8 @@ class UserSimulator:
         goal_index = ...
         self.goal = UserGoal()
 
-    def step(self, agent_frame):
+    def step(self, agent_frame, round_num):
+        # First check round num
         return next_user_frame, reward, done, succ
 
     def _refresh_agenda(self):

@@ -13,9 +13,9 @@ goal_list = ...
 user_sim = UserSimulator()
 # Init error model controller
 emc_0 = EMC(level=1, type=1, error_amount=0.05)
-# Init or load agent
-dqn_agent = DQNAgent()
 state_tracker = StateTracker()
+# Init or load agent
+dqn_agent = DQNAgent(state_tracker.get_state_size())
 
 # Warm-Up loop
 def warmup():
@@ -24,15 +24,16 @@ def warmup():
     while not done_warmup:
         ep_reset(goal_list)
         ep_step = 0
-        while ep_step < C['max_ep_length']:
+        done = False
+        while not done:
             # Get state tracker state
             state = state_tracker.get_state()
             # Agent takes action given state tracker's representation of dialogue
             agent_action = dqn_agent.get_action(state)
             # Update state tracker with the agent's action
-            agent_action = state_tracker.update_state_agent(agent_action)
+            agent_action, round_num = state_tracker.update_state_agent(agent_action)
             # User sim. takes action given agent action
-            user_action, reward, done, succ = user_sim.step(agent_action)
+            user_action, reward, done, succ = user_sim.step(agent_action, round_num)
             if not done:
                 # Infuse error into semantic frame level user sim. action
                 user_error_action = emc_0.infuse_error(user_action)
@@ -46,10 +47,7 @@ def warmup():
 
             if total_step == C['warmup_mem']:
                 done_warmup = True
-
-            # If passes done
-            if done or done_warmup:
-                break
+                done = True
 
 
 # Training Loop
@@ -61,16 +59,17 @@ def train():
         ep_reset(goal_list)
         # Inner loop (by conversation)
         ep += 1
-        ep_step = 0
-        while ep_step < C['max_ep_length']:
+        done = False
+        while not done:
             # Get state tracker state
             state = state_tracker.get_state()
             # Agent takes action given state tracker's representation of dialogue
             agent_action = dqn_agent.get_action(state)
             # Update state tracker with the agent's action
-            agent_action = state_tracker.update_state_agent(agent_action)
+            # Todo: Note a round counts as an action by a user then agent (incremented in update_state_agent in ST)
+            agent_action, round_num = state_tracker.update_state_agent(agent_action)
             # User sim. takes action given agent action
-            user_action, reward, done, succ = user_sim.step(agent_action)
+            user_action, reward, done, succ = user_sim.step(agent_action, round_num)
             if not done:
                 # Infuse error into semantic frame level user sim. action
                 user_error_action = emc_0.infuse_error(user_action)
@@ -79,12 +78,8 @@ def train():
              # Add memory
             dqn_agent.add_experience(state, agent_action, reward, state_tracker.get_state(), done)
 
-            ep_step += 1
-
-            if done:
-                if succ:
-                    period_succ_total += 1
-                break
+        if succ:
+            period_succ_total += 1
 
         if ep % C['val_freq'] == 0:
             # Check succ rate
@@ -120,15 +115,16 @@ def test():
         ep_reset(goal_list)
         ep += 1
         ep_step = 0
-        while ep_step < C['max_ep_length']:
+        done = False
+        while not done:
             # Get state tracker state
             state = state_tracker.get_state()
             # Agent takes action given state tracker's representation of dialogue
             agent_action = dqn_agent.get_action(state)
             # Update state tracker with the agent's action
-            agent_action = state_tracker.update_state_agent(agent_action)
+            agent_action, round_num = state_tracker.update_state_agent(agent_action)
             # User sim. takes action given agent action
-            user_action, reward, done, succ = user_sim.step(agent_action)
+            user_action, reward, done, succ = user_sim.step(agent_action, round_num)
             if not done:
                 # Infuse error into semantic frame level user sim. action
                 user_error_action = emc_0.infuse_error(user_action)
@@ -136,10 +132,6 @@ def test():
                 state_tracker.update_state_user(user_error_action)
 
             ep_step += 1
-
-            # If passes done
-            if done:
-                break
 
 
 warmup()

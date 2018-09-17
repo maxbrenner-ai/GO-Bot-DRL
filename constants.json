@@ -1,5 +1,5 @@
 {
-  "max_ep_length": 10,
+  "max_round_num": 20,
   "num_ep_train": 100,
   "num_ep_test": 10,
   "val_freq": 5,

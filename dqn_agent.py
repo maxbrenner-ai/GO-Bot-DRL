@@ -11,7 +11,7 @@ from dialogue_config import rule_requests, agent_actions
 
 # Note: They do not anneal epsilon
 class DQNAgent:
-    def __init__(self):
+    def __init__(self, state_size):
         self.memory = []
         self.memory_index = 0
         self.max_memory_size = C['max_mem_size']
@@ -22,8 +22,7 @@ class DQNAgent:
         self.num_batches = C['num_batches']
         self.batch_size = C['batch_size']
 
-        # Placeholder
-        self.state_size = ...
+        self.state_size = state_size
 
         self.beh_model = self._build_model()
         self.tar_model = self._build_model()
