@@ -25,7 +25,7 @@ class StateTracker:
 
     def get_state(self):
         user_action = self.history[-1]
-        kb_results_dict = self.db_helper.database_results_for_agent(self.current_informs)
+        kb_results_dict = self.db_helper.get_db_results_for_slots(self.current_informs)
         last_agent_action = self.history[-2] if len(self.history) > 1 else None
 
         ########################################################################
@@ -112,10 +112,18 @@ class StateTracker:
         return state_representation
 
     def update_state_agent(self, agent_action):
+        # First check the informs (if there are any)
         inform_slots = self.db_helper.fill_inform_slots(agent_action['inform_slots'], self.current_informs)
         agent_action[inform_slots] = inform_slots
         for slot in agent_action['inform_slots'].keys():
             self.current_informs[slot] = agent_action['inform_slots'][slot]  # add into inform_slots
+        # Then check if the intent is match_found and fill the informs with the current informs from here
+        if agent_action['intent'] == 'match_found':
+            assert len(agent_action['inform_slots'].keys()) == 0, 'Cannot inform and have intent of match found!'
+            agent_action['inform_slots'] = self.current_informs
+            # Add a new inform slot to say whether there is actually a match (bool)
+            db_results = self.db_helper.get_db_results(self.current_informs)
+            agent_action['inform_slots'].update({'match': 'match available' if len(db_results) > 0 else 'no match available'})
         self.history.append(agent_action)
         self.history[-1].update({'round': self.round_num, 'speaker': 'Agent'})
         self.round_num += 1

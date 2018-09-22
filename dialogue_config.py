@@ -2,6 +2,9 @@
 'PLACEHOLDER'  # For informs
 'UNK'  # For requests
 'anything'  # = to I DO NOT CARE, means any value works for the slot with this value
+'match available'  # For when the agent intent to inform a match is found, and the ST does find at least one
+'no match available'  # Used for same above and Used for inform slots needed to be filled by db_helper but there was no match with the current informs
+
 
 #######################################
 # Global config
@@ -25,7 +28,7 @@ agent_request_slots = []
 # Possible actions for agent
 agent_actions = [
     {'intent': 'done', 'inform_slots': {}, 'request_slots': {}},  # Triggers closing of conversation
-    {'intent': 'match_found', 'inform_slots': {}, 'request_slots': {}}  # To say that a match was found
+    {'intent': 'match_found', 'inform_slots': {'match': 'PLACEHOLDER'}, 'request_slots': {}}  # To say that a match was found
 ]
 for slot in agent_inform_slots:
     agent_actions.append({'intent': 'inform', 'inform_slots': {slot: 'PLACEHOLDER'}, 'request_slots': {}})

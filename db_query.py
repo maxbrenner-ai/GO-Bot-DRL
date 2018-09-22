@@ -10,52 +10,79 @@ class DBQuery:
         self.cached_db = defaultdict(dict)
 
     def fill_inform_slots(self, inform_slots_to_fill, current_inform_slots):
+        # Since this can be called even if nothign needs to be filled, return an empty dict if so
+        if not inform_slots_to_fill:
+            return {}
+
         # db_results is a dict of dict in the same exact format as the db, its just a subset of the db
-        db_results = self._get_db_results(current_inform_slots)
+        db_results = self.get_db_results(current_inform_slots)
+
+        filled_informs = {}
+        for slot in inform_slots_to_fill:
+            values_dict = self._count_slot_values(slot, db_results)
+            if values_dict:
+                # Get key with max val (ie slot value with highest count of avail results)
+                filled_informs[slot] = max(values_dict, key=values_dict.get)
+            else:
+                filled_informs[slot] = 'no match available'
+
         return inform_slots_to_fill
 
-    def _get_db_results(self, inform_slots):
-        constrain_keys = inform_slots.keys()
+    def _count_slot_values(self, slot, db_subdict):
+        slot_values = defaultdict(int)  # init to 0
+        for id in db_subdict.keys():
+            current_option_dict = db_subdict[id]
+            # If there is a match
+            if slot in current_option_dict.keys():
+                slot_value = current_option_dict[slot]
+                # This will add 1 to 0 if this is the first time this value has been encountered, or it will add 1
+                # to whatever was already in there
+                slot_values[slot_value] += 1
+
+        return slot_values
+
+    def get_db_results(self, constraints):
+        constrain_keys = constraints.keys()
         # Todo: get rid of this filter in mine
         constrain_keys = filter(lambda k: k != 'numberofpeople', constrain_keys)
         # Cuz we dont want to constrain results for a slot that the usersim doesnt care about
-        constrain_keys = [k for k in constrain_keys if inform_slots[k] != 'anything']
+        constrain_keys = [k for k in constrain_keys if constraints[k] != 'anything']
 
-        inform_items = frozenset(inform_slots.items())
+        inform_items = frozenset(constraints.items())
         cache_return = self.cached_db[inform_items]
 
         if cache_return is None:
             # If it is none then no matches fit with the constraints so return an empty dict
-            return dict()
+            return {}
         # if it isnt empty then return what it is
         if cache_return:
             return cache_return
         # else continue on
 
-        available_movies = {}
+        available_options = {}
         for id in self.database.keys():
-            current_movie_dict = self.database[id]
+            current_option_dict = self.database[id]
             # First check if that databse movie actually contains the inform keys
             # Todo: again this assumes that if a slot key is not in a movie dict then it doesnt match
             if len(set(constrain_keys) - set(self.database[id].keys())) == 0:
                 match = True
                 # Now check all the slots values against the DB movie slots values and if there is a mismatch dont store
-                for k, v in inform_slots.items():
+                for k, v in constraints.items():
                     # Todo: get rid of lower
-                    if str(v).lower() != str(current_movie_dict[k]).lower():
+                    if str(v).lower() != str(current_option_dict[k]).lower():
                         match = False
                 if match:
                     # Update cache
-                    self.cached_db[inform_items].update(current_movie_dict)
-                    available_movies.update(current_movie_dict)
+                    self.cached_db[inform_items].update(current_option_dict)
+                    available_options.update(current_option_dict)
 
         # if nothing avail then set it to none in cache
-        if not available_movies:
+        if not available_options:
             self.cached_db[inform_items] = None
 
-        return available_movies
+        return available_options
 
-    def results_for_slots(self, current_informs):
+    def get_db_results_for_slots(self, current_informs):
         # The items (key, value) of the current informs are used as a key to the cached_db_slot
         inform_items = frozenset(current_informs.items())
         # A dict of the inform keys and their counts as stored (or not stored) in the cached_db_slot
