@@ -12,7 +12,7 @@
 
 # All possible intents (for one-hot conversion in ST.get_state())
 # Todo: so i am gonna see if i can make match_found an intent instead of inform slot
-all_intents = ['inform', 'request', 'done', 'match_found', 'accept', 'reject']
+all_intents = ['inform', 'request', 'done', 'match_found', 'accept', 'reject', 'closing']  # Closing is used by usersim in very last action of whole cycle
 
 # All possible slots (for one-hot conversion in ST.get_state())
 all_slots = [...]
@@ -45,3 +45,6 @@ rule_requests = [...]
 # Possible inform and request slot values for usersim
 usersim_inform_slots = [...]
 usersim_request_slots = [...]
+
+# Used for the end goal of the usersim, eg ticket, it must be added to req slots of the usergoal
+usersim_default_slot = ['default']
