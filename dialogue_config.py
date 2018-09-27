@@ -9,10 +9,13 @@
 #######################################
 # Global config
 #######################################
+FAILED = -1
+
 
 # All possible intents (for one-hot conversion in ST.get_state())
 # Todo: so i am gonna see if i can make match_found an intent instead of inform slot
-all_intents = ['inform', 'request', 'done', 'match_found', 'accept', 'reject', 'closing']  # Closing is used by usersim in very last action of whole cycle
+# done for agent if it is closing, or usersim if round num past max round num
+all_intents = ['inform', 'request', 'done', 'match_found', 'accept', 'reject']
 
 # All possible slots (for one-hot conversion in ST.get_state())
 all_slots = [...]
