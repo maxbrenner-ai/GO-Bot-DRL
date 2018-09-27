@@ -1,5 +1,5 @@
 import random
-from dialogue_config import usersim_default_slot
+from dialogue_config import usersim_default_key, FAIL, NO_OUTCOME, SUCCESS
 import constants as C
 import random
 
@@ -10,7 +10,7 @@ class UserSimulator:
 
         self.max_round = C['max_round_num']
         # This is eqivalent to ticket in the moviedatabase, it MUST be in req of user sim goal
-        self.default_slot = usersim_default_slot
+        self.default_key = usersim_default_key
 
     def reset(self):
         self.state = {}
@@ -22,18 +22,15 @@ class UserSimulator:
         self.state['request_slots'] = {}
         # Init. all informs and requests in user goal, remove slots as informs made by user or agent
         self.state['rest_slots'] = {}
+        # Rest slots is going to be a dict of all goal informs and requests
+        self.state['rest_slots'].update(self.goal['inform_slots'])
+        self.state['rest_slots'].update(self.goal['request_slots'])
         self.state['intent'] = ''
         self.goal = random.choice(self.goal_list)
         # Add default slot to requests of goal
-        self.goal['request_slots'][self.default_slot] = 'UNK'
+        self.goal['request_slots'][self.default_key] = 'UNK'
         # False for failure, true for success, auto init to failure
-        self.constraint_check = False
-
-        # Init rest slots: Format {'slot name': 'request' or 'inform', ...}
-        for req_slot in self.goal['request_slots']:
-            self.state['rest_slots'][req_slot] = 'request'
-        for inf_slot in self.goal['inform_slots']:
-            self.state['rest_slots'][inf_slot] = 'inform'
+        self.constraint_check = FAIL
 
     def _return_init_action(self):
         # Always request
@@ -47,7 +44,7 @@ class UserSimulator:
         self.state['inform_slots'].clear()
 
         done = False
-        succ = None  # False means loss, true means win, none means not done
+        succ = NO_OUTCOME
         # First check round num, if past max then fail
         if round_num > self.max_round:
             done = True
@@ -65,6 +62,15 @@ class UserSimulator:
             if agent_intent == 'done':
                 self.response_to_done(agent_action)
 
+        # My assumptions:
+        # If request intent, then make sure request slots
+        if self.state['intent'] is 'request':
+            assert self.state['request_slots']
+        # If inform intent, then make sure inform slots and NO request slots
+        if self.state['intent'] is 'inform':
+            assert self.state['inform_slots']
+            assert not self.state['request_slots']
+
         user_response = {}
         user_response['intent'] = self.state['intent']
         user_response['request_slots'] = self.state['request_slots']
@@ -75,35 +81,87 @@ class UserSimulator:
         return user_response, reward, done, succ
 
     def _reward_function(self, succ):
-        # Todo: Make sure succ = None doesnt trigger False!
-        if succ == False:
+        if succ == FAIL:
             reward = -self.max_round
-        elif succ == True:
+        elif succ == SUCCESS:
             reward = 2*self.max_round
         else:
             reward = -1
         return reward
 
     def response_to_request(self, agent_action):
+        agent_request_key = agent_action['request_slots'].keys()[0]
         # First Case: if agent requests for something that is in the usersims goal inform slots, then inform it
-        if
-
+        if agent_request_key in self.goal['inform_slots']:
+            self.state['intent'] = 'inform'
+            self.state['inform_slots'][agent_request_key] = self.goal['inform_slots'][agent_request_key]
+            self.state['request_slots'].clear()
+            self.state['rest_slots'].pop(agent_request_key, None)
         # Second Case: if the agent requests for something in usersims goal request slots and it has already been
         # informed, then inform it
-
-        # Third Case: if the agent requests for something in the usersims goal request slots and it HASNT been
+        elif agent_request_key in self.goal['request_slots'] and agent_request_key in self.state['history_slots']:
+            self.state['intent'] = 'inform'
+            self.state['inform_slots'][agent_request_key] = self.state['history_slots'][agent_request_key]
+            self.state['request_slots'].clear()
+        # Third Case: if the agent requests for something in the usersims goal request slots and it HASN'T been
         # informed, then request it with all available inform slots left for usersim to inform
-
+        elif agent_request_key in self.goal['request_slots'] and agent_request_key in self.state['rest_slots']:
+            self.state['intent'] = 'request'
+            self.state['request_slots'][agent_request_key] = 'UNK'
+            # Todo: So i dont really like this, fuck around with it and see if there is a better option that still works
+            for (key, value) in self.state['rest_slots']:
+                # Means it is an inform
+                if value is not 'UNK':
+                    self.state['inform_slots'][key] = value
+                    self.state['rest_slots'].pop(key)
         # Fourth and Final Case: otherwise the usersim does not care about the slot being requested, then inform
-        # todo.... fill in
+        # todo.... fill in with thanks or "i dont care"
+        else:
+
 
     def response_to_inform(self, agent_action):
-        # First Case: If agent informs something that is in goal informs and the value it informed doesnt match, then inform the correct value
+        agent_inform_key = agent_action['inform_slots'].keys()[0]
+        agent_inform_value = agent_action['inform_slots'][agent_inform_key]
 
+        # Add all informs (by agent too) to hist slots
+        self.state['history_slots'][agent_inform_key] = agent_inform_value
+        # Remove from rest slots if in it
+        self.state['rest_slots'].pop(agent_inform_key, None)
+        # Remove from request slots if in it
+        self.state['request_slots'].pop(agent_inform_key, None)
+
+        # First Case: If agent informs something that is in goal informs and the value it informed doesnt match, then inform the correct value
+        if agent_inform_value is not self.goal['inform_slots'].get(agent_inform_key, agent_inform_value):
+            self.state['intent'] = 'inform'
+            self.state['inform_slots'][agent_inform_key] = self.goal['inform_slots'][agent_inform_key]
+            self.state['request_slots'].clear()
         # Second Case: Otherwise pick a random action to take
+        else:
             # - If anything in state requests then request it
-            # - Else if something to say in rest slots, say it
-            # - Otherwise respond with 'nothing to say' intent
+            if self.state['request_slots']:
+                self.state['intent'] = 'request'
+            # - Else if something to say in rest slots, pick something
+            elif self.state['rest_slots']:
+                # Will return False if not in rest slots, and the value of 'UNK' if it is
+                def_in = self.state['rest_slots'].pop(self.default_key, False)
+                if self.state['rest_slots']:
+                    key, value = random.choice(list(self.state['rest_slots'].items()))
+                    if value is not 'UNK':
+                        self.state['intent'] = 'inform'
+                        self.state['inform_slots'][key] = value
+                        self.state['rest_slots'].pop(key)
+                    else:
+                        self.state['intent'] = 'request'
+                        self.state['request_slots'][key] = 'UNK'
+                else:
+                    self.state['intent'] = 'request'
+                    self.state['request_slots'][self.default_key] = 'UNK'
+                # If it was in, then add it back because it can only be removed from an inform
+                if def_in:
+                    assert def_in is 'UNK'
+                    self.state['rest_slots'][self.default_key] = 'UNK'
+            # - Otherwise respond with 'nothing to say' intent Todo: ADdd thanks or 'im done' or something
+            else:
 
     def response_to_match_found(self, agent_action):
 

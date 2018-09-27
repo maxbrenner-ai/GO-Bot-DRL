@@ -9,7 +9,11 @@
 #######################################
 # Global config
 #######################################
-FAILED = -1
+
+# These are used for both constraint check AND success check in usersim
+FAIL = -1
+NO_OUTCOME = 0
+SUCCESS = 1
 
 
 # All possible intents (for one-hot conversion in ST.get_state())
@@ -50,4 +54,4 @@ usersim_inform_slots = [...]
 usersim_request_slots = [...]
 
 # Used for the end goal of the usersim, eg ticket, it must be added to req slots of the usergoal
-usersim_default_slot = ['default']
+usersim_default_key = 'default'
