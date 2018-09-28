@@ -1,13 +1,14 @@
 from db_query import DBQuery
 import numpy as np
 from utils import convert_list_to_dict
-from dialogue_config import all_intents, all_slots
+from dialogue_config import all_intents, all_slots, usersim_default_key
 import constants as C
 
 
 class StateTracker:
     def __init__(self, movie_database):
         self.db_helper = DBQuery(movie_database)
+        self.match_key = usersim_default_key
         self.intents_dict = convert_list_to_dict(all_intents)
         self.num_intents = len(all_intents)
         self.slots_dict = convert_list_to_dict(all_slots)
@@ -123,7 +124,8 @@ class StateTracker:
             agent_action['inform_slots'] = self.current_informs
             # Add a new inform slot to say whether there is actually a match (bool)
             db_results = self.db_helper.get_db_results(self.current_informs)
-            agent_action['inform_slots'].update({'match': 'match available' if len(db_results) > 0 else 'no match available'})
+            # Note: SO this allows the agent to not have informed ticket yet to still check if it works
+            agent_action['inform_slots'][self.match_key] = 'match available' if len(db_results) > 0 else 'no match available'
         self.history.append(agent_action)
         self.history[-1].update({'round': self.round_num, 'speaker': 'Agent'})
         self.round_num += 1

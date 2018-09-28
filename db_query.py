@@ -1,4 +1,5 @@
 from collections import defaultdict
+from dialogue_config import no_query_keys, usersim_default_key
 
 
 class DBQuery:
@@ -8,6 +9,8 @@ class DBQuery:
         self.cached_db_slot = defaultdict(dict)
         # {frozenset: {'#': {'slot': 'value'}}} A dict of dicts of dicts, a dict of DB sub-dicts
         self.cached_db = defaultdict(dict)
+        self.no_query = no_query_keys
+        self.match_key = usersim_default_key
 
     def fill_inform_slots(self, inform_slots_to_fill, current_inform_slots):
         # Since this can be called even if nothign needs to be filled, return an empty dict if so
@@ -18,23 +21,27 @@ class DBQuery:
         db_results = self.get_db_results(current_inform_slots)
 
         filled_informs = {}
-        for slot in inform_slots_to_fill:
-            values_dict = self._count_slot_values(slot, db_results)
+        for key in inform_slots_to_fill.keys():
+            # If def key (ie ticket) then set it and continue
+            if key is self.match_key:
+                filled_informs[key] = 'match available' if len(db_results) > 0 else 'no match available'
+                continue
+            values_dict = self._count_slot_values(key, db_results)
             if values_dict:
                 # Get key with max val (ie slot value with highest count of avail results)
-                filled_informs[slot] = max(values_dict, key=values_dict.get)
+                filled_informs[key] = max(values_dict, key=values_dict.get)
             else:
-                filled_informs[slot] = 'no match available'
+                filled_informs[key] = 'no match available'
 
         return inform_slots_to_fill
 
-    def _count_slot_values(self, slot, db_subdict):
+    def _count_slot_values(self, key, db_subdict):
         slot_values = defaultdict(int)  # init to 0
         for id in db_subdict.keys():
             current_option_dict = db_subdict[id]
             # If there is a match
-            if slot in current_option_dict.keys():
-                slot_value = current_option_dict[slot]
+            if key in current_option_dict.keys():
+                slot_value = current_option_dict[key]
                 # This will add 1 to 0 if this is the first time this value has been encountered, or it will add 1
                 # to whatever was already in there
                 slot_values[slot_value] += 1
@@ -43,10 +50,10 @@ class DBQuery:
 
     def get_db_results(self, constraints):
         constrain_keys = constraints.keys()
-        # Todo: get rid of this filter in mine
-        constrain_keys = filter(lambda k: k != 'numberofpeople', constrain_keys)
-        # Cuz we dont want to constrain results for a slot that the usersim doesnt care about
-        constrain_keys = [k for k in constrain_keys if constraints[k] != 'anything']
+
+        # Filter non-querible items such as numberofpoeple and ticket
+        # Anything as well cuz we dont want to constrain results for a slot that the usersim doesnt care about
+        constrain_keys = [k for k in constrain_keys if k not in self.no_query and constraints[k] is not 'anything']
 
         inform_items = frozenset(constraints.items())
         cache_return = self.cached_db[inform_items]
@@ -101,8 +108,8 @@ class DBQuery:
             all_slots_match = True
             for slot in current_informs.keys():
                 # Unlike TC-bot i make it so if the user doesnt care about the value then its count goes up for every item in the db
-                # Todo: Actually for now i will do what they do so i can test and compare results
-                if current_informs[slot] == 'anything':
+                # Todo: Actually for now i will do what they do so i can test and compare results, but will prolly change
+                if current_informs[slot] is 'anything' or current_informs[slot] in self.no_query:
                     # db_results[slot] += 1
                     continue
                 # Todo: So they count a inform slot key not being in the current movie in the db as a failure

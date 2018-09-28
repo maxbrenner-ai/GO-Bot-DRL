@@ -10,7 +10,7 @@ MAX_EP_LENGTH = 10
 # Generate possible user goals
 goal_list = ...
 # Init user sim
-user_sim = UserSimulator()
+user_sim = UserSimulator(goal_list)
 # Init error model controller
 emc_0 = EMC(level=1, type=1, error_amount=0.05)
 state_tracker = StateTracker()
@@ -22,7 +22,7 @@ def warmup():
     total_step = 0
     done_warmup = False
     while not done_warmup:
-        ep_reset(goal_list)
+        ep_reset()
         ep_step = 0
         done = False
         while not done:
@@ -56,7 +56,7 @@ def train():
     period_succ_total = 0
     succ_rate_best = 0.0
     while ep < C['num_ep_train']:
-        ep_reset(goal_list)
+        ep_reset()
         # Inner loop (by conversation)
         ep += 1
         done = False
@@ -96,11 +96,11 @@ def train():
 
 
 # User sim takes first action
-def ep_reset(goal_list):
+def ep_reset():
     # First reset the state tracker
     state_tracker.reset()
     # Then pick an init user action
-    user_action = user_sim.reset(goal_list)
+    user_action = user_sim.reset()
     # Infuse with error
     user_error_action = emc_0.infuse_error(user_action)
     # And update state tracker
@@ -112,7 +112,7 @@ def ep_reset(goal_list):
 def test():
     ep = 0
     while ep < C['num_ep_test']:
-        ep_reset(goal_list)
+        ep_reset()
         ep += 1
         ep_step = 0
         done = False
