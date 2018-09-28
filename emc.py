@@ -1,9 +1,47 @@
-class EMC:
-    def __init__(self, level, type, error_amount):
-        self.level = level  # Intent (1) or slot (2)
-        self.type = type  # Out of the (1,2,3) of intent and (1,2,3,4) if slot
-        self.error_amount = error_amount  # error chance [0,1]
+import random
 
+
+class EMC:
+    def __init__(self, movie_dict, slot_error_prob, slot_error_mode, intent_error_prob):
+        # Dict of (string, list) where each key is the slot name and the list is of possible values
+        self.movie_dict = movie_dict
+        self.slot_error_prob = slot_error_prob
+        self.slot_error_mode = slot_error_mode  # 1 - 4
+        self.intent_error_prob = intent_error_prob
+
+    # Todo: check if i even need to use return in these methods...
     def infuse_error(self, frame):
+        informs_dict = frame['inform_slots']
+        for key in informs_dict.keys():
+            if random.random() < self.slot_error_prob:
+                if self.slot_error_mode == 0: # replace the slot_value only
+                    informs_dict = self._slot_value_noise(key, informs_dict)
+                elif self.slot_error_mode == 1: #replace slot and its values
+                    informs_dict = self._slot_noise(key, informs_dict)
+                elif self.slot_error_mode == 2:  # delete the slot
+                    informs_dict = self._slot_remove(key, informs_dict)
+                else: # Combine all three
+                    rand_choice = random.random()
+                    if rand_choice <= 0.33:
+                        informs_dict = self._slot_value_noise(key, informs_dict)
+                    elif rand_choice > 0.33 and rand_choice <= 0.66:
+                        informs_dict = self._slot_noise(key, informs_dict)
+                    else:
+                        informs_dict = self._slot_remove(key, informs_dict)
+        frame['inform_slots'] = informs_dict
         return frame
 
+    def _slot_value_noise(self, key, informs_dict):
+        if key in self.movie_dict.keys():
+            informs_dict[key] = random.choice(self.movie_dict[key])
+        return informs_dict
+
+    def _slot_noise(self, key, informs_dict):
+        informs_dict.pop(key)
+        random_slot = random.choice(self.movie_dict.keys())
+        informs_dict[key] = random.choice(self.movie_dict[random_slot])
+        return informs_dict
+
+    def _slot_remove(self, key, informs_dict):
+        informs_dict.pop(key)
+        return informs_dict
