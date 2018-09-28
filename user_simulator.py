@@ -163,6 +163,15 @@ class UserSimulator:
             # - Otherwise respond with 'nothing to say' intent Todo: ADdd thanks or 'im done' or something
             else:
 
+    # All ST informs will be sent in with this agent action
     def response_to_match_found(self, agent_action):
+        agent_informs = agent_action['inform_slots']
+
+        self.state['intent'] = 'accept'
+        self.constraint_check = SUCCESS
+
+        # Check to see if all goal informs are in the agent informs, and that the values match
+        for (key, value) in self.goal['inform_slots'].items():
+            if key not in agent_informs or
 
     def response_to_done(self, agent_action):
