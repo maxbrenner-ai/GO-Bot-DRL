@@ -1,4 +1,3 @@
-import constants as C
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
@@ -11,16 +10,17 @@ from dialogue_config import rule_requests, agent_actions
 
 # Note: They do not anneal epsilon
 class DQNAgent:
-    def __init__(self, state_size):
+    def __init__(self, state_size, constants):
+        self.C = constants['agent']
         self.memory = []
         self.memory_index = 0
-        self.max_memory_size = C['max_mem_size']
-        self.eps = C['epsilon_init']  # Note they do not anneal eps, and default is 0, so i should test this out
-        self.num_actions = C['num_actions']
-        self.lr = C['learning_rate']
-        self.gamma = C['gamma']
-        self.num_batches = C['num_batches']
-        self.batch_size = C['batch_size']
+        self.max_memory_size = self.C['max_mem_size']
+        self.eps = self.C['epsilon_init']  # Note they do not anneal eps, and default is 0, so i should test this out
+        self.lr = self.C['learning_rate']
+        self.gamma = self.C['gamma']
+        self.num_batches = self.C['num_batches']
+        self.batch_size = self.C['batch_size']
+        self.hidden_size = self.C['dqn_hidden_size']
 
         self.state_size = state_size
 
@@ -29,13 +29,13 @@ class DQNAgent:
         self.none_state = np.zeros(self.state_size)
 
         self.possible_actions = agent_actions
+        self.num_actions = len(self.possible_actions)
 
         self.reset()
 
     def _build_model(self):
         model = Sequential()
-        model.add(Dense(24, input_dim=self.state_size, activation='relu'))
-        model.add(Dense(24, activation='relu'))
+        model.add(Dense(self.hidden_size, input_dim=self.state_size, activation='relu'))
         model.add(Dense(self.num_actions, activation='linear'))
         model.compile(loss='mse', optimizer=Adam(lr=self.lr))
         return model

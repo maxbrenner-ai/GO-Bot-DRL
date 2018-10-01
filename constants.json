@@ -1,15 +1,25 @@
 {
-  "max_round_num": 20,
-  "num_ep_train": 100,
-  "num_ep_test": 10,
-  "val_freq": 5,
-  "success_rate_threshold": 0.3,
-  "warmup_mem": 100,
-  "max_mem_size": 10000,
-  "epsilon_init": 1.0,
-  "num_actions": 10,
-  "gamma": 0.95,
-  "learning_rate": 0.0005,
-  "batch_size": 16,
-  "num_batches_train": 1
+  "file_paths": {
+    "database": "data/movie_db.p",
+    "dict": "data/movie_dict.p",
+    "user_goals": "data/movie_user_goals.p"
+  },
+  "run": {
+    "warmup_mem": 5000,
+    "num_ep_train": 50000,
+    "train_freq": 100,
+    "num_ep_test": 10,
+    "max_round_num": 20,
+    "success_rate_threshold": 0.3
+  },
+  "agent": {
+    "learning_rate": 0.0005,
+    "batch_size": 16,
+    "num_batches_train": 1,
+    "dqn_hidden_size": 80,
+    "epsilon_init": 0.0,
+    "gamma": 0.95,
+    "max_mem_size": 100000
+  },
+  ""
 }

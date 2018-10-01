@@ -1,6 +1,6 @@
 import random
 from dialogue_config import usersim_default_key, FAIL, NO_OUTCOME, SUCCESS, usersim_required_init_inform_keys
-import constants as C
+import constants
 import random
 
 '''
@@ -17,7 +17,7 @@ Also I will be getting rid of 'thanks' probably
 class UserSimulator:
     def __init__(self, goal_list):
         self.goal_list = goal_list
-        self.max_round = C['max_round_num']
+        self.max_round = constants['run']['max_round_num']
         # This is eqivalent to ticket in the moviedatabase, it MUST be in req of user sim goal
         self.default_key = usersim_default_key
         # A list of REQUIRED to be in the first action inform keys

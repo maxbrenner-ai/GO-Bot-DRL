@@ -2,18 +2,17 @@ from db_query import DBQuery
 import numpy as np
 from utils import convert_list_to_dict
 from dialogue_config import all_intents, all_slots, usersim_default_key
-import constants as C
 
 
 class StateTracker:
-    def __init__(self, movie_database):
+    def __init__(self, movie_database, constants):
         self.db_helper = DBQuery(movie_database)
         self.match_key = usersim_default_key
         self.intents_dict = convert_list_to_dict(all_intents)
         self.num_intents = len(all_intents)
         self.slots_dict = convert_list_to_dict(all_slots)
         self.num_slots = len(all_slots)
-        self.max_round_num = C['max_round_num']
+        self.max_round_num = constants['run']['max_round_num']
         self.reset()
 
     def get_state_size(self):
