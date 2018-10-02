@@ -1,8 +1,8 @@
 {
   "file_paths": {
     "database": "data/movie_db.pkl",
-    "dict": "data/movie_dict.pkl",
-    "user_goals": "data/movie_user_goals.pkl"
+    "dict": "data/movie_dict.p",
+    "user_goals": "data/movie_user_goals.p"
   },
   "run": {
     "warmup_mem": 5000,

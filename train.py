@@ -26,8 +26,9 @@ NUM_EP_TEST = run_dict['num_ep_test']
 MAX_ROUND_NUM = run_dict['max_round_num']
 SUCCESS_RATE_THRESHOLD = run_dict['success_rate_threshold']
 
+# Todo: make sure these were laoded in correctly
 # Load Movie DB
-database = pickle.load(open(DATABASE_FILE_PATH, 'rb'))
+database = pickle.load(open(DATABASE_FILE_PATH, 'rb'), encoding='latin1')
 # Load Movie Dict
 db_dict = pickle.load(open(DICT_FILE_PATH, 'rb'))
 # Load Goal File
