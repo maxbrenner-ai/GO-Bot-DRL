@@ -88,7 +88,7 @@ def train():
             # Get state tracker state
             state = state_tracker.get_state()
             # Agent takes action given state tracker's representation of dialogue
-            agent_action = dqn_agent.get_action(state)
+            agent_action_index, agent_action = dqn_agent.get_action(state)
             # Update state tracker with the agent's action
             # Todo: Note a round counts as an action by a user then agent (incremented in update_state_agent in ST)
             agent_action, round_num = state_tracker.update_state_agent(agent_action)
@@ -100,7 +100,7 @@ def train():
                 # Update state tracker with user sim. action
                 state_tracker.update_state_user(user_error_action)
              # Add memory
-            dqn_agent.add_experience(state, agent_action, reward, state_tracker.get_state(), done)
+            dqn_agent.add_experience(state, agent_action_index, reward, state_tracker.get_state(), done)
 
         if succ:
             period_succ_total += 1
@@ -144,7 +144,7 @@ def test():
             # Get state tracker state
             state = state_tracker.get_state()
             # Agent takes action given state tracker's representation of dialogue
-            agent_action = dqn_agent.get_action(state)
+            _, agent_action = dqn_agent.get_action(state)
             # Update state tracker with the agent's action
             agent_action, round_num = state_tracker.update_state_agent(agent_action)
             # User sim. takes action given agent action
