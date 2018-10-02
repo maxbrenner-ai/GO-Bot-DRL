@@ -2,12 +2,12 @@ import random
 
 
 class EMC:
-    def __init__(self, movie_dict, slot_error_prob, slot_error_mode, intent_error_prob):
+    def __init__(self, db_dict, constants):
         # Dict of (string, list) where each key is the slot name and the list is of possible values
-        self.movie_dict = movie_dict
-        self.slot_error_prob = slot_error_prob
-        self.slot_error_mode = slot_error_mode  # 1 - 4
-        self.intent_error_prob = intent_error_prob
+        self.movie_dict = db_dict
+        self.slot_error_prob = constants['slot_error_prob']
+        self.slot_error_mode = constants['slot_error_mode']  # 0 - 3
+        self.intent_error_prob = constants['intent_error_prob']
 
     # Todo: check if i even need to use return in these methods...
     def infuse_error(self, frame):

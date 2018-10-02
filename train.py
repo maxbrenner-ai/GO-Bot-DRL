@@ -12,7 +12,7 @@ with open(CONSTANTS_FILE_PATH) as f:
     constants = json.load(f)
 
 # Load File Path Constants
-file_path_dict = constants['file_path']
+file_path_dict = constants['file_paths']
 DATABASE_FILE_PATH = file_path_dict['database']
 DICT_FILE_PATH = file_path_dict['dict']
 USER_GOALS_FILE_PATH = file_path_dict['user_goals']
@@ -27,18 +27,18 @@ MAX_ROUND_NUM = run_dict['max_round_num']
 SUCCESS_RATE_THRESHOLD = run_dict['success_rate_threshold']
 
 # Load Movie DB
-
+database = pickle.load(open(DATABASE_FILE_PATH, 'rb'))
 # Load Movie Dict
+db_dict = pickle.load(open(DICT_FILE_PATH, 'rb'))
 # Load Goal File
-all_goal_set = pickle.load(open(goal_file_path, 'rb'))
-goal_list = ...
-# Init user sim
-user_sim = UserSimulator(goal_list)
-# Init error model controller
-emc_0 = EMC(level=1, type=1, error_amount=0.05)
-state_tracker = StateTracker()
-# Init or load agent
-dqn_agent = DQNAgent(state_tracker.get_state_size())
+user_goals = pickle.load(open(USER_GOALS_FILE_PATH, 'rb'))
+
+# Init. Objects
+user_sim = UserSimulator(user_goals, constants)
+emc_0 = EMC(db_dict, constants)
+state_tracker = StateTracker(database, constants)
+dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)
+
 
 # Warm-Up loop
 def warmup():
@@ -157,6 +157,11 @@ def test():
             ep_step += 1
 
 
-warmup()
-train()
-test()
+def main():
+    warmup()
+    # train()
+    # test()
+
+
+if __name__ == "__main__":
+    main()

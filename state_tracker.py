@@ -5,8 +5,8 @@ from dialogue_config import all_intents, all_slots, usersim_default_key
 
 
 class StateTracker:
-    def __init__(self, movie_database, constants):
-        self.db_helper = DBQuery(movie_database)
+    def __init__(self, database, constants):
+        self.db_helper = DBQuery(database)
         self.match_key = usersim_default_key
         self.intents_dict = convert_list_to_dict(all_intents)
         self.num_intents = len(all_intents)
