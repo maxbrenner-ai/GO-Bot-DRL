@@ -83,6 +83,11 @@ class DQNAgent:
             if index == i:
                 return action
 
+    def _dqn_predict_one(self, state, target=False):
+        p = self._dqn_predict(state.reshape(1, self.state_size), target=target).flatten()
+        print(p.shape)
+        return self._dqn_predict(state.reshape(1, self.state_size), target=target).flatten()
+
     def _dqn_predict(self, states, target=False):
         if target:
             index = self.tar_model.predict(states)
@@ -90,9 +95,6 @@ class DQNAgent:
             index = self.beh_model.predict(states)
 
         return index, self._map_index_to_action(index)
-
-    def _dqn_predict_one(self, state, target=False):
-        return self._dqn_predict(state.reshape(1, self.state_size), target=target).flatten()
 
     def add_experience(self, state, action, reward, next_state, done):
 
