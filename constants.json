@@ -1,8 +1,8 @@
 {
   "file_paths": {
     "database": "data/movie_db.pkl",
-    "dict": "data/movie_dict.p",
-    "user_goals": "data/movie_user_goals.p"
+    "dict": "data/movie_dict.pkl",
+    "user_goals": "data/movie_user_goals.pkl"
   },
   "run": {
     "warmup_mem": 5000,
@@ -15,7 +15,7 @@
   "agent": {
     "learning_rate": 0.0005,
     "batch_size": 16,
-    "num_batches_train": 1,
+    "num_batches": 1,
     "dqn_hidden_size": 80,
     "epsilon_init": 0.0,
     "gamma": 0.95,

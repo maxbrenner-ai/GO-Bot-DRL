@@ -23,13 +23,12 @@ class DQNAgent:
         self.hidden_size = self.C['dqn_hidden_size']
 
         self.state_size = state_size
+        self.possible_actions = agent_actions
+        self.num_actions = len(self.possible_actions)
 
         self.beh_model = self._build_model()
         self.tar_model = self._build_model()
         self.none_state = np.zeros(self.state_size)
-
-        self.possible_actions = agent_actions
-        self.num_actions = len(self.possible_actions)
 
         self.reset()
 
@@ -50,11 +49,11 @@ class DQNAgent:
             return random.randint(0, self.num_actions - 1)
         else:
             if use_rule:
-                return self._rule_predict()
+                return self._rule_action()
             else:
-                return np.argmax(self._dqn_predict_one(state))
+                return self._dqn_action(state)
 
-    def _rule_predict(self):
+    def _rule_action(self):
         if self.rule_current_slot_index < len(self.rule_request_set):
             slot = self.rule_request_set[self.rule_current_slot_index]
             self.rule_current_slot_index += 1
@@ -67,19 +66,30 @@ class DQNAgent:
         else:
             assert True is False
 
-        return self._action_index(rule_response)
+        return self._map_action_to_index(rule_response), rule_response
 
-    # For the rule policy to index the crafted response
-    def _action_index(self, response):
+    def _map_action_to_index(self, response):
         for (i, action) in enumerate(self.possible_actions):
             if response == action:
                 return i
 
+    def _dqn_action(self, state):
+        index = np.argmax(self._dqn_predict_one(state))
+        return index, self._map_index_to_action(index)
+
+    # Map index to action
+    def _map_index_to_action(self, index):
+        for (i, action) in enumerate(self.possible_actions):
+            if index == i:
+                return action
+
     def _dqn_predict(self, states, target=False):
         if target:
-            return self.tar_model.predict(states)
+            index = self.tar_model.predict(states)
         else:
-            return self.beh_model.predict(states)
+            index = self.beh_model.predict(states)
+
+        return index, self._map_index_to_action(index)
 
     def _dqn_predict_one(self, state, target=False):
         return self._dqn_predict(state.reshape(1, self.state_size), target=target).flatten()

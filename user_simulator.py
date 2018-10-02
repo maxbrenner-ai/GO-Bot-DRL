@@ -53,12 +53,12 @@ class UserSimulator:
             for inform_key in self.init_informs:
                 if inform_key in self.goal['inform_slots']:
                     self.state['inform_slots'][inform_key] = self.goal['inform_slots'][inform_key]
-                    self.state['rest_slots'].remove(inform_key)
+                    self.state['rest_slots'].pop(inform_key)
             # If nothing was added then pick a random one to add
             if not self.state['inform_slots']:
                 key, value = random.choice(list(self.goal['inform_slots'].items()))
                 self.state['inform_slots'][key] = value
-                self.state['rest_slots'].remove(key)
+                self.state['rest_slots'].pop(key)
 
         # Now add a request, do a random one if something other than ticket available
         def_in = self.goal['request_slots'].pop(self.default_key, False)

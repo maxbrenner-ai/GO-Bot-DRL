@@ -5,9 +5,9 @@ class EMC:
     def __init__(self, db_dict, constants):
         # Dict of (string, list) where each key is the slot name and the list is of possible values
         self.movie_dict = db_dict
-        self.slot_error_prob = constants['slot_error_prob']
-        self.slot_error_mode = constants['slot_error_mode']  # 0 - 3
-        self.intent_error_prob = constants['intent_error_prob']
+        self.slot_error_prob = constants['emc']['slot_error_prob']
+        self.slot_error_mode = constants['emc']['slot_error_mode']  # 0 - 3
+        self.intent_error_prob = constants['emc']['intent_error_prob']
 
     # Todo: check if i even need to use return in these methods...
     def infuse_error(self, frame):
