@@ -23,7 +23,7 @@ class DBQuery:
         filled_informs = {}
         for key in inform_slots_to_fill.keys():
             # If def key (ie ticket) then set it and continue
-            if key is self.match_key:
+            if key == self.match_key:
                 filled_informs[key] = 'match available' if len(db_results) > 0 else 'no match available'
                 continue
             values_dict = self._count_slot_values(key, db_results)
@@ -33,7 +33,7 @@ class DBQuery:
             else:
                 filled_informs[key] = 'no match available'
 
-        return inform_slots_to_fill
+        return filled_informs
 
     def _count_slot_values(self, key, db_subdict):
         slot_values = defaultdict(int)  # init to 0
@@ -56,7 +56,7 @@ class DBQuery:
         inform_items = frozenset(constraints.items())
         cache_return = self.cached_db[inform_items]
 
-        if cache_return is None:
+        if cache_return == None:
             # If it is none then no matches fit with the constraints so return an empty dict
             return {}
         # if it isnt empty then return what it is
@@ -107,7 +107,7 @@ class DBQuery:
             for slot in current_informs.keys():
                 # Unlike TC-bot i make it so if the user doesnt care about the value then its count goes up for every item in the db
                 # Todo: Actually for now i will do what they do so i can test and compare results, but will prolly change
-                if current_informs[slot] is 'anything' or current_informs[slot] in self.no_query:
+                if current_informs[slot] == 'anything' or current_informs[slot] in self.no_query:
                     # db_results[slot] += 1
                     continue
                 # Todo: So they count a inform slot key not being in the current movie in the db as a failure

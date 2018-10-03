@@ -178,7 +178,7 @@ def ep_reset():
 
 def main():
     warmup_run()
-    # train_run()
+    train_run()
 
 
 if __name__ == "__main__":

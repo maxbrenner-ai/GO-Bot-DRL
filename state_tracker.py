@@ -121,15 +121,16 @@ class StateTracker:
         inform_slots = self.db_helper.fill_inform_slots(agent_action['inform_slots'], self.current_informs)
         agent_action['inform_slots'] = inform_slots
         for key, value in agent_action['inform_slots'].items():
-            assert key is not 'match_found'
+            assert key != 'match_found'
+            assert value != 'PLACEHOLDER', 'KEY: {}'.format(key)
             self.current_informs[key] = value  # add into inform_slots
         # Then check if the intent is match_found and fill the informs with the current informs from here
-        if agent_action['intent'] is 'match_found':
+        if agent_action['intent'] == 'match_found':
             assert len(agent_action['inform_slots'].keys()) == 0, 'Cannot inform and have intent of match found!'
             agent_action['inform_slots'] = self.current_informs
             # Add a new inform slot to say whether there is actually a match (bool)
             db_results = self.db_helper.get_db_results(self.current_informs)
-            # Note: SO this allows the agent to not have informed ticket yet to still check if it works
+            # Note: SO this allows the agent to not have informed ticket yet to still check if it works (NEEDED FOR RULE BASED AGENT unless i add teh third to last action being inform ticket)
             agent_action['inform_slots'][self.match_key] = 'match available' if len(db_results) > 0 else 'no match available'
         agent_action.update({'round': self.round_num, 'speaker': 'Agent'})
         self.history.append(agent_action)

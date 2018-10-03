@@ -42,6 +42,8 @@ class UserSimulator:
         # False for failure, true for success, auto init to failure
         self.constraint_check = FAIL
 
+        print('Goal: {}'.format(self.goal))
+
         return self._return_init_action()
 
     def _return_init_action(self):
@@ -54,33 +56,47 @@ class UserSimulator:
                 if inform_key in self.goal['inform_slots']:
                     self.state['inform_slots'][inform_key] = self.goal['inform_slots'][inform_key]
                     self.state['rest_slots'].pop(inform_key)
+                    self.state['history_slots'][inform_key] = self.goal['inform_slots'][inform_key]
             # If nothing was added then pick a random one to add
             if not self.state['inform_slots']:
                 key, value = random.choice(list(self.goal['inform_slots'].items()))
                 self.state['inform_slots'][key] = value
                 self.state['rest_slots'].pop(key)
+                self.state['history_slots'][key] = value
 
         # Now add a request, do a random one if something other than ticket available
-        def_in = self.goal['request_slots'].pop(self.default_key, False)
+        self.goal['request_slots'].pop(self.default_key)
         if self.goal['request_slots']:
             req_key = random.choice(list(self.goal['request_slots'].keys()))
         else:
             req_key = self.default_key
-        if def_in:
-            assert def_in is 'UNK'
-            self.goal['request_slots'][req_key] = 'UNK'
+        self.goal['request_slots'][self.default_key] = 'UNK'
+        self.state['request_slots'][req_key] = 'UNK'
 
         user_response = {}
         user_response['intent'] = self.state['intent']
         user_response['request_slots'] = self.state['request_slots']
         user_response['inform_slots'] = self.state['inform_slots']
 
+        print('Init user action: {}'.format(user_response))
+
         return user_response
 
     def step(self, agent_action, round_num):
-        # Add all inform slots just informed to history slots and Clear all state inform slots (just sent out)
-        self.state['history_slots'].update(self.state['inform_slots'])
+        print('ROUND: {}'.format(round_num))
+        print('agent action: {}'.format(agent_action))
+
+        # Assetions
+        # No unk in agent action informs
+        for value in agent_action['inform_slots'].values():
+            assert value != 'UNK'
+            assert value != 'PLACEHOLDER'
+        # No PLACHEOLDERin agent at all
+        for value in agent_action['request_slots'].values():
+            assert value != 'PLACEHOLDER'
+
         self.state['inform_slots'].clear()
+        self.state['intent'] = ''
 
         done = False
         succ = NO_OUTCOME
@@ -91,6 +107,7 @@ class UserSimulator:
             self.state['intent'] = 'done'
             self.state['request_slots'].clear()
         else:
+            print('Response:')
             agent_intent = agent_action['intent']
             if agent_intent == 'request':
                 self.response_to_request(agent_action)
@@ -104,16 +121,36 @@ class UserSimulator:
                 self.state['request_slots'].clear()
                 done = True
 
+        print('State: {}'.format(self.state))
+
         # My assumptions:
         # If request intent, then make sure request slots
-        if self.state['intent'] is 'request':
+        if self.state['intent'] == 'request':
             assert self.state['request_slots']
         # If inform intent, then make sure inform slots and NO request slots
-        if self.state['intent'] is 'inform':
+        if self.state['intent'] == 'inform':
             assert self.state['inform_slots']
             assert not self.state['request_slots']
         assert 'UNK' not in self.state['inform_slots'].values()
         assert 'PLACEHOLDER' not in self.state['request_slots'].values()
+        # No overlap between rest and hist
+        for key in self.state['rest_slots']:
+            assert key not in self.state['history_slots']
+        for key in self.state['history_slots']:
+            assert key not in self.state['rest_slots']
+        # All slots in both rest and hist should contain the slots for goal
+        # print('-------')
+        # print(self.goal['inform_slots'])
+        # print(self.state['history_slots'])
+        # print(self.state['rest_slots'])
+        for inf_key in self.goal['inform_slots']:
+            assert self.state['history_slots'].get(inf_key, False) or self.state['rest_slots'].get(inf_key, False)
+        for req_key in self.goal['request_slots']:  # Todo: STILL A PROBLEM HERE
+            assert self.state['history_slots'].get(req_key, False) or self.state['rest_slots'].get(req_key, False)
+        # Anything in the rest should be in the goal
+        for key in self.state['rest_slots']:
+            assert self.goal['inform_slots'].get(key, False) or self.goal['request_slots'].get(key, False)
+        assert self.state['intent'] != ''
 
         user_response = {}
         user_response['intent'] = self.state['intent']
@@ -137,35 +174,42 @@ class UserSimulator:
         agent_request_key = list(agent_action['request_slots'].keys())[0]
         # First Case: if agent requests for something that is in the usersims goal inform slots, then inform it
         if agent_request_key in self.goal['inform_slots']:
+            print('req 1')
             self.state['intent'] = 'inform'
             self.state['inform_slots'][agent_request_key] = self.goal['inform_slots'][agent_request_key]
             self.state['request_slots'].clear()
             self.state['rest_slots'].pop(agent_request_key, None)
+            self.state['history_slots'][agent_request_key] = self.goal['inform_slots'][agent_request_key]
         # Second Case: if the agent requests for something in usersims goal request slots and it has already been
         # informed, then inform it
         elif agent_request_key in self.goal['request_slots'] and agent_request_key in self.state['history_slots']:
+            print('req 2')
             self.state['intent'] = 'inform'
             self.state['inform_slots'][agent_request_key] = self.state['history_slots'][agent_request_key]
             self.state['request_slots'].clear()
+            assert agent_request_key not in self.state['rest_slots']
         # Third Case: if the agent requests for something in the usersims goal request slots and it HASN'T been
         # informed, then request it with all available inform slots left for usersim to inform
         elif agent_request_key in self.goal['request_slots'] and agent_request_key in self.state['rest_slots']:
+            print('req 3')
             self.state['intent'] = 'request'
             self.state['request_slots'][agent_request_key] = 'UNK'
             # Todo: So i dont really like this, fuck around with it and see if there is a better option that still works
             for key in list(self.state['rest_slots'].keys()):
                 value = self.state['rest_slots'][key]
                 # Means it is an inform
-                if value is not 'UNK':
+                if value != 'UNK':
                     self.state['inform_slots'][key] = value
                     self.state['rest_slots'].pop(key)
+                    self.state['history_slots'][key] = value
         # Fourth and Final Case: otherwise the usersim does not care about the slot being requested, then inform
         # Todo: So this is the way i want this, but its different than theirs, so change if its fucking shit up
         else:
+            print('req 4')
             self.state['intent'] = 'inform'
             self.state['inform_slots'][agent_request_key] = 'anything'
             self.state['request_slots'].clear()
-
+            self.state['history_slots'][agent_request_key] = 'anything'
 
     def response_to_inform(self, agent_action):
         agent_inform_key = list(agent_action['inform_slots'].keys())[0]
@@ -179,7 +223,8 @@ class UserSimulator:
         self.state['request_slots'].pop(agent_inform_key, None)
 
         # First Case: If agent informs something that is in goal informs and the value it informed doesnt match, then inform the correct value
-        if agent_inform_value is not self.goal['inform_slots'].get(agent_inform_key, agent_inform_value):
+        if agent_inform_value != self.goal['inform_slots'].get(agent_inform_key, agent_inform_value):
+            print('inf 1')
             self.state['intent'] = 'inform'
             self.state['inform_slots'][agent_inform_key] = self.goal['inform_slots'][agent_inform_key]
             self.state['request_slots'].clear()
@@ -187,17 +232,20 @@ class UserSimulator:
         else:
             # - If anything in state requests then request it
             if self.state['request_slots']:
+                print('inf 2.1')
                 self.state['intent'] = 'request'
             # - Else if something to say in rest slots, pick something
             elif self.state['rest_slots']:
+                print('inf 2.2')
                 # Will return False if not in rest slots, and the value of 'UNK' if it is
                 def_in = self.state['rest_slots'].pop(self.default_key, False)
                 if self.state['rest_slots']:
                     key, value = random.choice(list(self.state['rest_slots'].items()))
-                    if value is not 'UNK':
+                    if value != 'UNK':
                         self.state['intent'] = 'inform'
                         self.state['inform_slots'][key] = value
                         self.state['rest_slots'].pop(key)
+                        self.state['history_slots'][key] = value
                     else:
                         self.state['intent'] = 'request'
                         self.state['request_slots'][key] = 'UNK'
@@ -205,17 +253,18 @@ class UserSimulator:
                     self.state['intent'] = 'request'
                     self.state['request_slots'][self.default_key] = 'UNK'
                 # If it was in, then add it back because it can only be removed from an inform
-                if def_in:
-                    assert def_in is 'UNK'
+                if def_in == 'UNK':
                     self.state['rest_slots'][self.default_key] = 'UNK'
             # - Otherwise respond with 'nothing to say' intent
             else:
+                print('inf 2.3')
                 # TOdo: probably will change
                 # Note: This thanks will actually have no requests
                 self.state['intent'] = 'thanks'
 
     # All ST informs will be sent in with this agent action
     def response_to_match_found(self, agent_action):
+        print('mf')
         agent_informs = agent_action['inform_slots']
 
         # Todo: I will be changing this intent to 'accept' and clearing requests
@@ -231,7 +280,7 @@ class UserSimulator:
 
         # Check to see if all goal informs are in the agent informs, and that the values match
         for (key, value) in self.goal['inform_slots'].items():
-            assert value is not None
+            assert value != None
             # Will return true if key not in agent informs OR if value does not match value of agent informs[key]
             if value != agent_informs.get(key, None):
                 self.state['intent'] = 'reject'
@@ -239,6 +288,7 @@ class UserSimulator:
                 self.constraint_check = FAIL
 
     def response_to_done(self, agent_action):
+        print('done')
         # Case 1: Check constraits from match found
         if self.constraint_check == FAIL:
             return FAIL
@@ -250,11 +300,12 @@ class UserSimulator:
         if not self.state['rest_slots']:
             assert not self.state['request_slots']
         def_in = self.state['rest_slots'].pop(self.default_key, False)
+        return_here = False
         if self.state['rest_slots']:
-            if def_in:
-                assert def_in is 'UNK'
-                self.state['rest_slots'][self.default_key] = 'UNK'
-            return FAIL
+            return_here = True
+        if def_in == 'UNK':
+            self.state['rest_slots'][self.default_key] = 'UNK'
+        if return_here: return FAIL
 
         # Case 3: Check if hist slots contain any NO VALUE MATCH
         # Todo: Will be changing this, all i care about is that any GOAL INFORM is in the hist slots, and those are matches
@@ -267,5 +318,8 @@ class UserSimulator:
                 if self.state['history_slots'][info_slot] != self.goal['inform_slots'][info_slot]:
                     return FAIL
 
+        # Todo: VERYYYYYYYYYYYYYYYYYYYYYYYY IMPORTANT:
+        # The only reason i bleive that they ONLY add ticket if no match avail (in intent match found) and pop the ticket
+        # when checking if the rest stack is empty in done is because they check the hist slots to see if no match avail
 
         return SUCCESS
