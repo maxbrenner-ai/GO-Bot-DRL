@@ -132,7 +132,7 @@ class UserSimulator:
         return reward
 
     def response_to_request(self, agent_action):
-        agent_request_key = agent_action['request_slots'].keys()[0]
+        agent_request_key = list(agent_action['request_slots'].keys())[0]
         # First Case: if agent requests for something that is in the usersims goal inform slots, then inform it
         if agent_request_key in self.goal['inform_slots']:
             self.state['intent'] = 'inform'
@@ -151,7 +151,8 @@ class UserSimulator:
             self.state['intent'] = 'request'
             self.state['request_slots'][agent_request_key] = 'UNK'
             # Todo: So i dont really like this, fuck around with it and see if there is a better option that still works
-            for (key, value) in self.state['rest_slots']:
+            for key in list(self.state['rest_slots'].keys()):
+                value = self.state['rest_slots'][key]
                 # Means it is an inform
                 if value is not 'UNK':
                     self.state['inform_slots'][key] = value
@@ -165,7 +166,7 @@ class UserSimulator:
 
 
     def response_to_inform(self, agent_action):
-        agent_inform_key = agent_action['inform_slots'].keys()[0]
+        agent_inform_key = list(agent_action['inform_slots'].keys())[0]
         agent_inform_value = agent_action['inform_slots'][agent_inform_key]
 
         # Add all informs (by agent too) to hist slots
@@ -223,8 +224,8 @@ class UserSimulator:
         # Todo: In mine, remove this clase and instead add match to hist (remove from req and rest) no matter what
         if agent_informs[self.default_key] == 'no match available':
             self.state['history_slots'][self.default_key] = 'no match available'
-            if self.default_key in self.state['rest_slots']: self.state['rest_slots'].remove(self.default_key)
-            if self.default_key in self.state['request_slots'].keys(): del self.state['request_slots'][self.default_key]
+            if self.default_key in self.state['rest_slots']: self.state['rest_slots'].pop(self.default_key)
+            if self.default_key in self.state['request_slots'].keys(): self.state['request_slots'].pop(self.default_key)
 
         # Check to see if all goal informs are in the agent informs, and that the values match
         for (key, value) in self.goal['inform_slots'].items():

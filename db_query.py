@@ -49,11 +49,9 @@ class DBQuery:
         return slot_values
 
     def get_db_results(self, constraints):
-        constrain_keys = constraints.keys()
-
         # Filter non-querible items such as numberofpoeple and ticket
         # Anything as well cuz we dont want to constrain results for a slot that the usersim doesnt care about
-        constrain_keys = [k for k in constrain_keys if k not in self.no_query and constraints[k] is not 'anything']
+        constraints = {k: v for k, v in constraints.items() if k not in self.no_query and v is not 'anything'}
 
         inform_items = frozenset(constraints.items())
         cache_return = self.cached_db[inform_items]
@@ -71,7 +69,7 @@ class DBQuery:
             current_option_dict = self.database[id]
             # First check if that databse movie actually contains the inform keys
             # Todo: again this assumes that if a slot key is not in a movie dict then it doesnt match
-            if len(set(constrain_keys) - set(self.database[id].keys())) == 0:
+            if len(set(constraints.keys()) - set(self.database[id].keys())) == 0:
                 match = True
                 # Now check all the slots values against the DB movie slots values and if there is a mismatch dont store
                 for k, v in constraints.items():
@@ -80,8 +78,8 @@ class DBQuery:
                         match = False
                 if match:
                     # Update cache
-                    self.cached_db[inform_items].update(current_option_dict)
-                    available_options.update(current_option_dict)
+                    self.cached_db[inform_items].update({id: current_option_dict})
+                    available_options.update({id: current_option_dict})
 
         # if nothing avail then set it to none in cache
         if not available_options:

@@ -1,15 +1,13 @@
-import sys
-
-if len(sys.argv[1:]) != 2:
-  sys.exit(__doc__)
+original = "data/movie_user_goals.pkl"
+destination = "movie_user_goals.pkl"
 
 content = ''
 outsize = 0
-with open(sys.argv[1], 'rb') as infile:
+with open(original, 'rb') as infile:
   content = infile.read()
-with open(sys.argv[2], 'wb') as output:
+with open(destination, 'wb') as output:
   for line in content.splitlines():
     outsize += len(line) + 1
-    output.write(line + '\n')
+    output.write(line + str.encode('\n'))
 
 print("Done. Saved %s bytes." % (len(content)-outsize))

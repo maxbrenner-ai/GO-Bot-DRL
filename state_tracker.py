@@ -13,17 +13,22 @@ class StateTracker:
         self.slots_dict = convert_list_to_dict(all_slots)
         self.num_slots = len(all_slots)
         self.max_round_num = constants['run']['max_round_num']
+        self.none_state = np.zeros(self.get_state_size())
         self.reset()
 
     def get_state_size(self):
-        return 2 * self.num_intents + 7 * self.num_slots + 3 + self.max_round_num
+        return 2 * self.num_intents + 7 * self.num_slots + 3 + self.max_round_num  # 224
 
     def reset(self):
         self.current_informs = {}
         self.history = []  # Is a list of the dialogues (dict) by the agent and user so far in the conversation
         self.round_num = 1
 
-    def get_state(self):
+    def get_state(self, done=False):
+        # If done then fill stat with zeros
+        if done:
+            return self.none_state
+
         user_action = self.history[-1]
         kb_results_dict = self.db_helper.get_db_results_for_slots(self.current_informs)
         last_agent_action = self.history[-2] if len(self.history) > 1 else None
@@ -87,7 +92,7 @@ class StateTracker:
         # Todo: I'm interested to see if including this increases performance
 
         turn_onehot_rep = np.zeros((1, self.max_round_num))
-        turn_onehot_rep[0, self.round_num] = 1.0
+        turn_onehot_rep[0, self.round_num - 1] = 1.0
 
         ########################################################################
         #   Representation of KB results (scaled counts)
@@ -108,17 +113,18 @@ class StateTracker:
 
         state_representation = np.hstack(
             [user_act_rep, user_inform_slots_rep, user_request_slots_rep, agent_act_rep, agent_inform_slots_rep,
-             agent_request_slots_rep, current_slots_rep, turn_rep, turn_onehot_rep, kb_binary_rep, kb_count_rep])
+             agent_request_slots_rep, current_slots_rep, turn_rep, turn_onehot_rep, kb_binary_rep, kb_count_rep]).flatten()
         return state_representation
 
     def update_state_agent(self, agent_action):
         # First check the informs (if there are any)
         inform_slots = self.db_helper.fill_inform_slots(agent_action['inform_slots'], self.current_informs)
-        agent_action[inform_slots] = inform_slots
-        for slot in agent_action['inform_slots'].keys():
-            self.current_informs[slot] = agent_action['inform_slots'][slot]  # add into inform_slots
+        agent_action['inform_slots'] = inform_slots
+        for key, value in agent_action['inform_slots'].items():
+            assert key is not 'match_found'
+            self.current_informs[key] = value  # add into inform_slots
         # Then check if the intent is match_found and fill the informs with the current informs from here
-        if agent_action['intent'] == 'match_found':
+        if agent_action['intent'] is 'match_found':
             assert len(agent_action['inform_slots'].keys()) == 0, 'Cannot inform and have intent of match found!'
             agent_action['inform_slots'] = self.current_informs
             # Add a new inform slot to say whether there is actually a match (bool)
@@ -132,8 +138,8 @@ class StateTracker:
         return agent_action, self.round_num
 
     def update_state_user(self, user_action):
-        for slot in user_action['inform_slots'].keys():
-            self.current_informs[slot] = user_action['inform_slots'][slot]
+        for key, value in user_action['inform_slots'].items():
+            self.current_informs[key] = value
         self.history.append(user_action)
         # Todo: check if this still changes the user_action object, dont really want it to
         self.history[-1].update({'round': self.round_num, 'speaker': 'User'})

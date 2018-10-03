@@ -1,7 +1,7 @@
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam
-import random
+import random, copy
 import numpy as np
 from dialogue_config import rule_requests, agent_actions
 
@@ -24,11 +24,10 @@ class DQNAgent:
 
         self.state_size = state_size
         self.possible_actions = agent_actions
-        self.num_actions = len(self.possible_actions)
+        self.num_actions = len(self.possible_actions)  # 40
 
         self.beh_model = self._build_model()
         self.tar_model = self._build_model()
-        self.none_state = np.zeros(self.state_size)
 
         self.reset()
 
@@ -59,7 +58,7 @@ class DQNAgent:
             self.rule_current_slot_index += 1
             rule_response = {'intent': 'request', 'inform_slots': {}, 'request_slots': {slot: 'UNK'}}
         elif self.rule_phase == 'not done':
-            rule_response = {'intent': "inform", 'inform_slots': {'match_found': 'PLACEHOLDER'}, 'request_slots': {}}
+            rule_response = {'intent': 'match_found', 'inform_slots': {}, 'request_slots': {}}
             self.rule_phase = 'done'
         elif self.rule_phase == 'done':
             rule_response = {'intent': 'done', 'inform_slots': {}, 'request_slots': {}}
@@ -81,25 +80,18 @@ class DQNAgent:
     def _map_index_to_action(self, index):
         for (i, action) in enumerate(self.possible_actions):
             if index == i:
-                return action
+                return copy.deepcopy(action)
 
     def _dqn_predict_one(self, state, target=False):
-        p = self._dqn_predict(state.reshape(1, self.state_size), target=target).flatten()
-        print(p.shape)
         return self._dqn_predict(state.reshape(1, self.state_size), target=target).flatten()
 
     def _dqn_predict(self, states, target=False):
         if target:
-            index = self.tar_model.predict(states)
+            return self.tar_model.predict(states)
         else:
-            index = self.beh_model.predict(states)
-
-        return index, self._map_index_to_action(index)
+            return self.beh_model.predict(states)
 
     def add_experience(self, state, action, reward, next_state, done):
-
-        assert isinstance(action, int)
-
         if len(self.memory) < self.max_memory_size:
             self.memory.append(None)
         self.memory[self.memory_index] = (state, action, reward, next_state, done)
@@ -116,7 +108,7 @@ class DQNAgent:
             batch_size = len(batch)
 
             states = np.array([sample[0] for sample in batch])
-            next_states = np.array([self.none_state if sample[4] is True else sample[3] for sample in batch])
+            next_states = np.array([sample[3] for sample in batch])
 
             beh_state_preds = self._dqn_predict(states)  # For leveling error
             beh_next_states_preds = self._dqn_predict(next_states)  # For indexing for DDQN
@@ -126,7 +118,7 @@ class DQNAgent:
             targets = np.zeros((batch_size, self.num_actions))
 
             # Todo: Test if this enum works
-            for i, (s, a, r, s_, d) in enumerate(batch_size):
+            for i, (s, a, r, s_, d) in enumerate(batch):
                 t = beh_state_preds[i]
                 t[a] = r + self.gamma * tar_next_state_preds[i][np.argmax(beh_next_states_preds[i])] * (not d)
 

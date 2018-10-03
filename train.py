@@ -26,13 +26,13 @@ NUM_EP_TEST = run_dict['num_ep_test']
 MAX_ROUND_NUM = run_dict['max_round_num']
 SUCCESS_RATE_THRESHOLD = run_dict['success_rate_threshold']
 
-# Todo: make sure these were laoded in correctly
+# Todo: make sure these were loaded in correctly
 # Load Movie DB
 database = pickle.load(open(DATABASE_FILE_PATH, 'rb'), encoding='latin1')
 # Load Movie Dict
-db_dict = pickle.load(open(DICT_FILE_PATH, 'rb'))
+db_dict = pickle.load(open(DICT_FILE_PATH, 'rb'), encoding='latin1')
 # Load Goal File
-user_goals = pickle.load(open(USER_GOALS_FILE_PATH, 'rb'))
+user_goals = pickle.load(open(USER_GOALS_FILE_PATH, 'rb'), encoding='latin1')
 
 # Init. Objects
 user_sim = UserSimulator(user_goals, constants)
@@ -42,7 +42,8 @@ dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)
 
 
 # Warm-Up loop
-def warmup():
+def warmup_run():
+    print('Warmup Started...')
     total_step = 0
     done_warmup = False
     while not done_warmup:
@@ -53,7 +54,7 @@ def warmup():
             # Get state tracker state
             state = state_tracker.get_state()
             # Agent takes action given state tracker's representation of dialogue
-            agent_action_index, agent_action = dqn_agent.get_action(state)
+            agent_action_index, agent_action = dqn_agent.get_action(state, use_rule=True)
             # Update state tracker with the agent's action
             agent_action, round_num = state_tracker.update_state_agent(agent_action)
             # User sim. takes action given agent action
@@ -64,7 +65,8 @@ def warmup():
                 # Update state tracker with user sim. action
                 state_tracker.update_state_user(user_error_action)
             # Add memory
-            dqn_agent.add_experience(state, agent_action_index, reward, state_tracker.get_state(), done)
+            next_state = state_tracker.get_state(done)
+            dqn_agent.add_experience(state, agent_action_index, reward, next_state, done)
 
             ep_step += 1
             total_step += 1
@@ -72,10 +74,12 @@ def warmup():
             if total_step == WARMUP_MEM:
                 done_warmup = True
                 done = True
+    print("...Warmup Ended")
 
 
 # Training Loop
-def train():
+def train_run():
+    print("Train Started...")
     ep = 0
     period_succ_total = 0
     succ_rate_best = 0.0
@@ -84,6 +88,7 @@ def train():
         # Inner loop (by conversation)
         ep += 1
         done = False
+        print('Episode: {}'.format(ep))
         while not done:
             # Get state tracker state
             state = state_tracker.get_state()
@@ -99,8 +104,9 @@ def train():
                 user_error_action = emc_0.infuse_error(user_action)
                 # Update state tracker with user sim. action
                 state_tracker.update_state_user(user_error_action)
-             # Add memory
-            dqn_agent.add_experience(state, agent_action_index, reward, state_tracker.get_state(), done)
+            # Add memory
+            next_state = state_tracker.get_state(done)
+            dqn_agent.add_experience(state, agent_action_index, reward, next_state, done)
 
         if succ:
             period_succ_total += 1
@@ -117,6 +123,7 @@ def train():
             dqn_agent.copy()
             # Train
             dqn_agent.train()
+    print("...Train Ended")
 
 
 # User sim takes first action
@@ -133,7 +140,7 @@ def ep_reset():
     dqn_agent.reset()
 
 
-def test():
+def test_run():
     ep = 0
     while ep < NUM_EP_TEST:
         ep_reset()
@@ -159,9 +166,8 @@ def test():
 
 
 def main():
-    warmup()
-    # train()
-    # test()
+    warmup_run()
+    train_run()
 
 
 if __name__ == "__main__":
