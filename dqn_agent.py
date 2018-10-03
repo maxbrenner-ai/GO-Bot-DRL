@@ -110,6 +110,8 @@ class DQNAgent:
             states = np.array([sample[0] for sample in batch])
             next_states = np.array([sample[3] for sample in batch])
 
+            assert states.shape == (batch_size, self.state_size), 'States Shape: {}'.format(states.shape)
+
             beh_state_preds = self._dqn_predict(states)  # For leveling error
             beh_next_states_preds = self._dqn_predict(next_states)  # For indexing for DDQN
             tar_next_state_preds = self._dqn_predict(next_states, target=True)  # For target value for DQN

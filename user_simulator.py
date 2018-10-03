@@ -87,7 +87,7 @@ class UserSimulator:
         # First check round num, if past max then fail
         if round_num > self.max_round:
             done = True
-            succ = False
+            succ = FAIL
             self.state['intent'] = 'done'
             self.state['request_slots'].clear()
         else:
@@ -120,7 +120,7 @@ class UserSimulator:
 
         reward = self._reward_function(succ)
 
-        return user_response, reward, done, succ
+        return user_response, reward, done, True if succ is 1 else False
 
     def _reward_function(self, succ):
         if succ == FAIL:
