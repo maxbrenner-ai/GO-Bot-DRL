@@ -112,6 +112,8 @@ class UserSimulator:
         if self.state['intent'] is 'inform':
             assert self.state['inform_slots']
             assert not self.state['request_slots']
+        assert 'UNK' not in self.state['inform_slots'].values()
+        assert 'PLACEHOLDER' not in self.state['request_slots'].values()
 
         user_response = {}
         user_response['intent'] = self.state['intent']

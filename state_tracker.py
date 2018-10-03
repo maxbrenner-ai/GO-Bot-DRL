@@ -131,15 +131,14 @@ class StateTracker:
             db_results = self.db_helper.get_db_results(self.current_informs)
             # Note: SO this allows the agent to not have informed ticket yet to still check if it works
             agent_action['inform_slots'][self.match_key] = 'match available' if len(db_results) > 0 else 'no match available'
+        agent_action.update({'round': self.round_num, 'speaker': 'Agent'})
         self.history.append(agent_action)
-        self.history[-1].update({'round': self.round_num, 'speaker': 'Agent'})
         self.round_num += 1
-        # I may not tech. have to return agent_action, i think it updates anyway, but this is easier to read
-        return agent_action, self.round_num
+        return self.round_num
 
     def update_state_user(self, user_action):
         for key, value in user_action['inform_slots'].items():
             self.current_informs[key] = value
+        user_action.update({'round': self.round_num, 'speaker': 'User'})
         self.history.append(user_action)
-        # Todo: check if this still changes the user_action object, dont really want it to
-        self.history[-1].update({'round': self.round_num, 'speaker': 'User'})
+        return user_action
