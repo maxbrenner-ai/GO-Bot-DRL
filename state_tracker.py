@@ -111,6 +111,19 @@ class StateTracker:
             if slot in self.slots_dict:
                 kb_binary_rep[0, self.slots_dict[slot]] = np.sum(kb_results_dict[slot] > 0.)
 
+        # print('---------')
+        # print(user_act_rep)
+        # print(user_inform_slots_rep)
+        # print(user_request_slots_rep)
+        # print(agent_act_rep)
+        # print(agent_inform_slots_rep)
+        # print(agent_request_slots_rep)
+        # print(current_slots_rep)
+        # print(turn_rep)
+        # print(turn_onehot_rep)
+        # print(kb_binary_rep)
+        # print(kb_count_rep)
+
         state_representation = np.hstack(
             [user_act_rep, user_inform_slots_rep, user_request_slots_rep, agent_act_rep, agent_inform_slots_rep,
              agent_request_slots_rep, current_slots_rep, turn_rep, turn_onehot_rep, kb_binary_rep, kb_count_rep]).flatten()
@@ -118,8 +131,19 @@ class StateTracker:
 
     def update_state_agent(self, agent_action):
         # First check the informs (if there are any)
+        # print('Agent informs to fill: {}'.format(agent_action['inform_slots']))
+        # print('Current Informs: {}'.format(self.current_informs))
+        if agent_action['inform_slots']:
+            inf_key = list(agent_action['inform_slots'].keys())[0]
+            # if inf_key in self.current_informs:
+            #     inf_value = self.current_informs[inf_key]
         inform_slots = self.db_helper.fill_inform_slots(agent_action['inform_slots'], self.current_informs)
+        if agent_action['inform_slots']:
+            if inf_key in self.current_informs:
+                inf_value = inform_slots[inf_key]
+                assert inf_value == self.current_informs[inf_key] or inf_value == 'no match available', '{} : {}'.format(inf_value, self.current_informs[inf_key])
         agent_action['inform_slots'] = inform_slots
+        # print('Filled Agent Informs: {}'.format(agent_action['inform_slots']))
         for key, value in agent_action['inform_slots'].items():
             assert key != 'match_found'
             assert value != 'PLACEHOLDER', 'KEY: {}'.format(key)
