@@ -12,26 +12,25 @@ class DBQuery:
         self.no_query = no_query_keys
         self.match_key = usersim_default_key
 
-    def fill_inform_slots(self, inform_slots_to_fill, current_inform_slots):
-        # Since this can be called even if nothign needs to be filled, return an empty dict if so
-        if not inform_slots_to_fill:
-            return {}
+    # Only one can be sent in (still in dict tho)
+    def fill_inform_slots(self, inform_slot_to_fill, current_inform_slots):
+        assert len(inform_slot_to_fill) == 1
 
         # db_results is a dict of dict in the same exact format as the db, its just a subset of the db
         db_results = self.get_db_results(current_inform_slots)
 
         filled_informs = {}
-        for key in inform_slots_to_fill.keys():
-            # If def key (ie ticket) then set it and continue
-            if key == self.match_key:
-                filled_informs[key] = 'match available' if len(db_results) > 0 else 'no match available'
-                continue
-            values_dict = self._count_slot_values(key, db_results)
-            if values_dict:
-                # Get key with max val (ie slot value with highest count of avail results)
-                filled_informs[key] = max(values_dict, key=values_dict.get)
-            else:
-                filled_informs[key] = 'no match available'
+        key = list(inform_slot_to_fill.keys())[0]  # Only one
+        # If def key (ie ticket) then set it and continue
+        if key == self.match_key:
+            filled_informs[key] = 'match available' if len(db_results) > 0 else 'no match available'
+            return filled_informs
+        values_dict = self._count_slot_values(key, db_results)
+        if values_dict:
+            # Get key with max val (ie slot value with highest count of avail results)
+            filled_informs[key] = max(values_dict, key=values_dict.get)
+        else:
+            filled_informs[key] = 'no match available'
 
         return filled_informs
 

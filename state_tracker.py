@@ -2,6 +2,7 @@ from db_query import DBQuery
 import numpy as np
 from utils import convert_list_to_dict
 from dialogue_config import all_intents, all_slots, usersim_default_key
+import copy
 
 
 class StateTracker:
@@ -129,29 +130,31 @@ class StateTracker:
              agent_request_slots_rep, current_slots_rep, turn_rep, turn_onehot_rep, kb_binary_rep, kb_count_rep]).flatten()
         return state_representation
 
+    # Todo: So because we dont filter out if the current informs already holds the inform for what teh action wants to inform
+    # it makes it so teh agent can't re-inform ie query again for a new value. So 2 options:
+    # Option 1: Just take out the current inform if it matches the one the agent wants to inform so it doesnt constrain the search
+    # Option 2: Do option 1 if the inform came from the agent, and just return the current inform if it came from the user (since it
+    # is more important that it is kept)
+    # Try option first unless it doesnt imrpove results
     def update_state_agent(self, agent_action):
         # First check the informs (if there are any)
-        # print('Agent informs to fill: {}'.format(agent_action['inform_slots']))
-        # print('Current Informs: {}'.format(self.current_informs))
-        if agent_action['inform_slots']:
-            inf_key = list(agent_action['inform_slots'].keys())[0]
-            # if inf_key in self.current_informs:
-            #     inf_value = self.current_informs[inf_key]
-        inform_slots = self.db_helper.fill_inform_slots(agent_action['inform_slots'], self.current_informs)
-        if agent_action['inform_slots']:
-            if inf_key in self.current_informs:
-                inf_value = inform_slots[inf_key]
-                assert inf_value == self.current_informs[inf_key] or inf_value == 'no match available', '{} : {}'.format(inf_value, self.current_informs[inf_key])
-        agent_action['inform_slots'] = inform_slots
-        # print('Filled Agent Informs: {}'.format(agent_action['inform_slots']))
-        for key, value in agent_action['inform_slots'].items():
-            assert key != 'match_found'
-            assert value != 'PLACEHOLDER', 'KEY: {}'.format(key)
-            self.current_informs[key] = value  # add into inform_slots
+        # If action is to inform
+        if agent_action['intent'] == 'inform':
+            assert agent_action['inform_slots']
+            inform_slots = self.db_helper.fill_inform_slots(agent_action['inform_slots'], self.current_informs)
+            agent_action['inform_slots'] = inform_slots
+            if agent_action['inform_slots']:
+                key, value = list(agent_action['inform_slots'].items())[0]  # Only one
+                assert key != 'match_found'
+                assert value != 'PLACEHOLDER', 'KEY: {}'.format(key)
+                self.current_informs[key] = value  # add into inform_slots
         # Then check if the intent is match_found and fill the informs with the current informs from here
-        if agent_action['intent'] == 'match_found':
-            assert len(agent_action['inform_slots'].keys()) == 0, 'Cannot inform and have intent of match found!'
-            agent_action['inform_slots'] = self.current_informs
+        elif agent_action['intent'] == 'match_found':
+            assert not agent_action['inform_slots'], 'Cannot inform and have intent of match found!'
+            # Todo: This deepcopy makes it so ticket is not added to current informs but if i change usersim to make it
+            # so that in response to match found the user saves ticket no matter if it is no match avail or not then
+            # i should change this so it does add it to current informs since the usersim is saving it as an inform
+            agent_action['inform_slots'] = copy.deepcopy(self.current_informs)
             # Add a new inform slot to say whether there is actually a match (bool)
             db_results = self.db_helper.get_db_results(self.current_informs)
             # Note: SO this allows the agent to not have informed ticket yet to still check if it works (NEEDED FOR RULE BASED AGENT unless i add teh third to last action being inform ticket)
@@ -166,4 +169,3 @@ class StateTracker:
             self.current_informs[key] = value
         user_action.update({'round': self.round_num, 'speaker': 'User'})
         self.history.append(user_action)
-        return user_action
