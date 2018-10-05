@@ -26,9 +26,16 @@ NUM_EP_TEST = run_dict['num_ep_test']
 MAX_ROUND_NUM = run_dict['max_round_num']
 SUCCESS_RATE_THRESHOLD = run_dict['success_rate_threshold']
 
-# Todo: make sure these were loaded in correctly
 # Load Movie DB
 database = pickle.load(open(DATABASE_FILE_PATH, 'rb'), encoding='latin1')
+
+# Todo: Figure out how to augment the db itself instead of having to do this
+# This removes all items with values of '' (ie values of empty string)
+for id in list(database.keys()):
+    for key in list(database[id].keys()):
+        if database[id][key] == '':
+            database[id].pop(key)
+
 # Load Movie Dict
 db_dict = pickle.load(open(DICT_FILE_PATH, 'rb'), encoding='latin1')
 # Load Goal File

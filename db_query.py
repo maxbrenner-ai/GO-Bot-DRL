@@ -13,26 +13,26 @@ class DBQuery:
         self.match_key = usersim_default_key
 
     # Only one can be sent in (still in dict tho)
-    def fill_inform_slots(self, inform_slot_to_fill, current_inform_slots):
+    def fill_inform_slot(self, inform_slot_to_fill, current_inform_slots):
         assert len(inform_slot_to_fill) == 1
 
         # db_results is a dict of dict in the same exact format as the db, its just a subset of the db
         db_results = self.get_db_results(current_inform_slots)
 
-        filled_informs = {}
+        filled_inform = {}
         key = list(inform_slot_to_fill.keys())[0]  # Only one
         # If def key (ie ticket) then set it and continue
         if key == self.match_key:
-            filled_informs[key] = 'match available' if len(db_results) > 0 else 'no match available'
-            return filled_informs
+            filled_inform[key] = 'match available' if len(db_results) > 0 else 'no match available'
+            return filled_inform
         values_dict = self._count_slot_values(key, db_results)
         if values_dict:
             # Get key with max val (ie slot value with highest count of avail results)
-            filled_informs[key] = max(values_dict, key=values_dict.get)
+            filled_inform[key] = max(values_dict, key=values_dict.get)
         else:
-            filled_informs[key] = 'no match available'
+            filled_inform[key] = 'no match available'
 
-        return filled_informs
+        return filled_inform
 
     def _count_slot_values(self, key, db_subdict):
         slot_values = defaultdict(int)  # init to 0
@@ -44,9 +44,9 @@ class DBQuery:
                 # This will add 1 to 0 if this is the first time this value has been encountered, or it will add 1
                 # to whatever was already in there
                 slot_values[slot_value] += 1
-
         return slot_values
 
+    # TODO: DEBUG
     def get_db_results(self, constraints):
         # Filter non-querible items such as numberofpoeple and ticket
         # Anything as well cuz we dont want to constrain results for a slot that the usersim doesnt care about
@@ -86,6 +86,7 @@ class DBQuery:
 
         return available_options
 
+    # TODO: DEBUG
     def get_db_results_for_slots(self, current_informs):
         # The items (key, value) of the current informs are used as a key to the cached_db_slot
         inform_items = frozenset(current_informs.items())

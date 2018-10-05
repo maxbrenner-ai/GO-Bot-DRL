@@ -141,7 +141,7 @@ class StateTracker:
         # If action is to inform
         if agent_action['intent'] == 'inform':
             assert agent_action['inform_slots']
-            inform_slots = self.db_helper.fill_inform_slots(agent_action['inform_slots'], self.current_informs)
+            inform_slots = self.db_helper.fill_inform_slot(agent_action['inform_slots'], self.current_informs)
             agent_action['inform_slots'] = inform_slots
             if agent_action['inform_slots']:
                 key, value = list(agent_action['inform_slots'].items())[0]  # Only one
