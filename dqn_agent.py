@@ -1,6 +1,7 @@
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.optimizers import Adam
+from keras.optimizers import Adam, RMSprop
+from keras.regularizers import l2
 import random, copy
 import numpy as np
 from dialogue_config import rule_requests, agent_actions
@@ -21,6 +22,10 @@ class DQNAgent:
         self.num_batches = self.C['num_batches']
         self.batch_size = self.C['batch_size']
         self.hidden_size = self.C['dqn_hidden_size']
+        self.decay_rate = self.C['decay_rate']
+        self.smooth_epsilon = self.C['smooth_eps']
+        self.l2_reg_constant = self.C['l2_reg_constant']
+        self.grad_clip_constant = self.C['grad_clip_constant']
 
         self.state_size = state_size
         self.possible_actions = agent_actions
@@ -33,9 +38,9 @@ class DQNAgent:
 
     def _build_model(self):
         model = Sequential()
-        model.add(Dense(self.hidden_size, input_dim=self.state_size, activation='relu'))
-        model.add(Dense(self.num_actions, activation='linear'))
-        model.compile(loss='mse', optimizer=Adam(lr=self.lr))
+        model.add(Dense(self.hidden_size, input_dim=self.state_size, activation='relu', kernel_regularizer=l2(self.l2_reg_constant)))
+        model.add(Dense(self.num_actions, activation='linear', kernel_regularizer=l2(self.l2_reg_constant)))
+        model.compile(loss='mse', optimizer=RMSprop(lr=self.lr, decay=self.decay_rate, epsilon=self.smooth_epsilon, clipvalue=self.grad_clip_constant))
         return model
 
     def reset(self):
