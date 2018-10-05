@@ -46,7 +46,6 @@ class DBQuery:
                 slot_values[slot_value] += 1
         return slot_values
 
-    # TODO: DEBUG
     def get_db_results(self, constraints):
         # Filter non-querible items such as numberofpoeple and ticket
         # Anything as well cuz we dont want to constrain results for a slot that the usersim doesnt care about
@@ -86,7 +85,8 @@ class DBQuery:
 
         return available_options
 
-    # TODO: DEBUG
+    # So if you think about it you coudl just save the counts for each value in a dict at tthe start BUTTTTT you cant
+    # actually do that because matching all constraints requires looking through the db evetytime!
     def get_db_results_for_slots(self, current_informs):
         # The items (key, value) of the current informs are used as a key to the cached_db_slot
         inform_items = frozenset(current_informs.items())
@@ -106,7 +106,7 @@ class DBQuery:
             all_slots_match = True
             for slot in current_informs.keys():
                 # Unlike TC-bot i make it so if the user doesnt care about the value then its count goes up for every item in the db
-                # Todo: Actually for now i will do what they do so i can test and compare results, but will prolly change
+                # Todo: Actually for now i will do what they do so i can test and compare results, but will prolly change (at least change to if KEY in it AND VALUE is anything then go up)
                 if current_informs[slot] == 'anything' or current_informs[slot] in self.no_query:
                     # db_results[slot] += 1
                     continue
@@ -125,4 +125,5 @@ class DBQuery:
 
         # update cache (set the empty dict)
         self.cached_db_slot[inform_items].update(db_results)
+        assert self.cached_db_slot[inform_items] == db_results
         return db_results
