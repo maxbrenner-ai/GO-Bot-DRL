@@ -50,7 +50,9 @@ class DQNAgent:
 
     def get_action(self, state, use_rule=False):
         if self.eps > random.random():
-            return random.randint(0, self.num_actions - 1)
+            index = random.randint(0, self.num_actions - 1)
+            action = self._map_index_to_action(index)
+            return index, action
         else:
             if use_rule:
                 return self._rule_action()
@@ -70,7 +72,8 @@ class DQNAgent:
         else:
             assert True is False
 
-        return self._map_action_to_index(rule_response), rule_response
+        index = self._map_action_to_index(rule_response)
+        return index, rule_response
 
     def _map_action_to_index(self, response):
         for (i, action) in enumerate(self.possible_actions):
@@ -79,7 +82,8 @@ class DQNAgent:
 
     def _dqn_action(self, state):
         index = np.argmax(self._dqn_predict_one(state))
-        return index, self._map_index_to_action(index)
+        action = self._map_index_to_action(index)
+        return index, action
 
     # Map index to action
     def _map_index_to_action(self, index):
@@ -106,9 +110,12 @@ class DQNAgent:
         self.memory = []
         self.memory_index = 0
 
+    def is_memory_full(self):
+        return len(self.memory) == self.max_memory_size
+
     # States, actions, rewards, next_states, done
     def train(self):
-        for _ in range(self.num_batches):
+        for i in range(self.num_batches):
             batch = self._sample_memory(self.batch_size)
             batch_size = len(batch)
 
@@ -116,17 +123,19 @@ class DQNAgent:
             next_states = np.array([sample[3] for sample in batch])
 
             assert states.shape == (batch_size, self.state_size), 'States Shape: {}'.format(states.shape)
+            assert next_states.shape == states.shape
 
             beh_state_preds = self._dqn_predict(states)  # For leveling error
             beh_next_states_preds = self._dqn_predict(next_states)  # For indexing for DDQN
-            tar_next_state_preds = self._dqn_predict(next_states, target=True)  # For target value for DQN
+            tar_next_state_preds = self._dqn_predict(next_states, target=True)  # For target value for DQN (& DDQN)
 
             inputs = np.zeros((batch_size, self.state_size))
             targets = np.zeros((batch_size, self.num_actions))
 
-            # Todo: Test if this enum works
             for i, (s, a, r, s_, d) in enumerate(batch):
                 t = beh_state_preds[i]
+
+                # NOTE: I havent check that this line works as a DDQN should but i assume it does...
                 t[a] = r + self.gamma * tar_next_state_preds[i][np.argmax(beh_next_states_preds[i])] * (not d)
 
                 inputs[i] = s
@@ -135,8 +144,8 @@ class DQNAgent:
             self.beh_model.train_on_batch(inputs, targets)
 
     def _sample_memory(self, num):
-        num = min(num, len(self.memory))
-        return random.sample(self.memory, num)
+        new_num = min(num, len(self.memory))
+        return random.sample(self.memory, new_num)
 
     def copy(self):
         self.tar_model.set_weights(self.beh_model.get_weights())

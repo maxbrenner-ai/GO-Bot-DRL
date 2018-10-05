@@ -82,7 +82,7 @@ def warmup_run():
             ep_step += 1
             total_step += 1
 
-            if total_step == WARMUP_MEM:
+            if total_step == WARMUP_MEM or dqn_agent.is_memory_full():
                 done_warmup = True
                 done = True
 
