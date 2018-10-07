@@ -17,6 +17,7 @@ class DQNAgent:
         self.memory_index = 0
         self.max_memory_size = self.C['max_mem_size']
         self.eps = self.C['epsilon_init']  # Note they do not anneal eps, and default is 0, so i should test this out
+        self.vanilla = self.C['vanilla']
         self.lr = self.C['learning_rate']
         self.gamma = self.C['gamma']
         self.num_batches = self.C['num_batches']
@@ -41,6 +42,7 @@ class DQNAgent:
         model.add(Dense(self.hidden_size, input_dim=self.state_size, activation='relu', kernel_regularizer=l2(self.l2_reg_constant)))
         model.add(Dense(self.num_actions, activation='linear', kernel_regularizer=l2(self.l2_reg_constant)))
         model.compile(loss='mse', optimizer=RMSprop(lr=self.lr, decay=self.decay_rate, epsilon=self.smooth_epsilon, clipvalue=self.grad_clip_constant))
+        # model.compile(loss='mse', optimizer=Adam(lr=self.lr))
         return model
 
     def reset(self):
@@ -126,7 +128,8 @@ class DQNAgent:
             assert next_states.shape == states.shape
 
             beh_state_preds = self._dqn_predict(states)  # For leveling error
-            beh_next_states_preds = self._dqn_predict(next_states)  # For indexing for DDQN
+            if not self.vanilla:
+                beh_next_states_preds = self._dqn_predict(next_states)  # For indexing for DDQN
             tar_next_state_preds = self._dqn_predict(next_states, target=True)  # For target value for DQN (& DDQN)
 
             inputs = np.zeros((batch_size, self.state_size))
@@ -136,8 +139,10 @@ class DQNAgent:
                 t = beh_state_preds[i]
 
                 # NOTE: I havent check that this line works as a DDQN should but i assume it does...
-                t[a] = r + self.gamma * tar_next_state_preds[i][np.argmax(beh_next_states_preds[i])] * (not d)
-
+                if not self.vanilla:
+                    t[a] = r + self.gamma * tar_next_state_preds[i][np.argmax(beh_next_states_preds[i])] * (not d)
+                else:
+                    t[a] = r + self.gamma * np.amax(tar_next_state_preds[i]) * (not d)
                 inputs[i] = s
                 targets[i] = t
 

@@ -151,14 +151,12 @@ class StateTracker:
         # Then check if the intent is match_found and fill the informs with the current informs from here
         elif agent_action['intent'] == 'match_found':
             assert not agent_action['inform_slots'], 'Cannot inform and have intent of match found!'
-            # Todo: This deepcopy makes it so ticket is not added to current informs but if i change usersim to make it
-            # so that in response to match found the user saves ticket no matter if it is no match avail or not then
-            # i should change this so it does add it to current informs since the usersim is saving it as an inform
             agent_action['inform_slots'] = copy.deepcopy(self.current_informs)
             # Add a new inform slot to say whether there is actually a match (bool)
             db_results = self.db_helper.get_db_results(self.current_informs)
             # Note: SO this allows the agent to not have informed ticket yet to still check if it works (NEEDED FOR RULE BASED AGENT unless i add teh third to last action being inform ticket)
             agent_action['inform_slots'][self.match_key] = 'match available' if len(db_results) > 0 else 'no match available'
+            self.current_informs[self.match_key] = agent_action['inform_slots'][self.match_key]
         agent_action.update({'round': self.round_num, 'speaker': 'Agent'})
         self.history.append(agent_action)
         self.round_num += 1

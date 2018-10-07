@@ -130,7 +130,7 @@ def train_run():
         if ep % TRAIN_FREQ == 0:
             # Check succ rate
             succ_rate = period_succ_total / TRAIN_FREQ
-            print('Succ. Rate: {} Current Best: {}'.format(succ_rate, max(succ_rate_best, SUCCESS_RATE_THRESHOLD)))
+            print('Succ. Rate: {} Current Best: {} Mem. Size: {}'.format(succ_rate, max(succ_rate_best, SUCCESS_RATE_THRESHOLD), len(dqn_agent.memory)))
             if succ_rate >= succ_rate_best and succ_rate >= SUCCESS_RATE_THRESHOLD:
                 print('NEW BEST: {}'.format(succ_rate))
                 # Flush
