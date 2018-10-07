@@ -143,11 +143,11 @@ class StateTracker:
             assert agent_action['inform_slots']
             inform_slots = self.db_helper.fill_inform_slot(agent_action['inform_slots'], self.current_informs)
             agent_action['inform_slots'] = inform_slots
-            if agent_action['inform_slots']:
-                key, value = list(agent_action['inform_slots'].items())[0]  # Only one
-                assert key != 'match_found'
-                assert value != 'PLACEHOLDER', 'KEY: {}'.format(key)
-                self.current_informs[key] = value  # add into inform_slots
+            assert agent_action['inform_slots']
+            key, value = list(agent_action['inform_slots'].items())[0]  # Only one
+            assert key != 'match_found'
+            assert value != 'PLACEHOLDER', 'KEY: {}'.format(key)
+            self.current_informs[key] = value  # add into inform_slots
         # Then check if the intent is match_found and fill the informs with the current informs from here
         elif agent_action['intent'] == 'match_found':
             assert not agent_action['inform_slots'], 'Cannot inform and have intent of match found!'
