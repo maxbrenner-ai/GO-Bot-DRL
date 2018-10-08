@@ -13,7 +13,7 @@
     "success_rate_threshold": 0.3
   },
   "agent": {
-    "vanilla": false,
+    "vanilla": true,
     "learning_rate": 1e-3,
     "batch_size": 16,
     "dqn_hidden_size": 80,
