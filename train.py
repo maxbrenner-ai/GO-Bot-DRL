@@ -1,6 +1,7 @@
 from user_simulator import UserSimulator
 from emc import EMC
 from dqn_agent import DQNAgent
+from dqn_agent_2 import DQNAgent as DQNAgent_2
 from state_tracker import StateTracker
 import pickle
 import json
@@ -130,11 +131,13 @@ def train_run():
         if ep % TRAIN_FREQ == 0:
             # Check succ rate
             succ_rate = period_succ_total / TRAIN_FREQ
-            print('Succ. Rate: {} Current Best: {} Mem. Size: {}'.format(succ_rate, max(succ_rate_best, SUCCESS_RATE_THRESHOLD), len(dqn_agent.memory)))
+            print('Succ. Rate: {} Current Best: {} Mem. Size: {}'.format(succ_rate, succ_rate_best, len(dqn_agent.memory)))
+            # Flush
             if succ_rate >= succ_rate_best and succ_rate >= SUCCESS_RATE_THRESHOLD:
-                print('NEW BEST: {}'.format(succ_rate))
-                # Flush
                 dqn_agent.empty_memory()
+            # Update current best succ rate
+            if succ_rate > succ_rate_best:
+                print('NEW BEST: {}'.format(succ_rate))
                 succ_rate_best = succ_rate
             period_succ_total = 0
             # Copy

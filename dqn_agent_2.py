@@ -1,10 +1,13 @@
 from keras.models import Sequential
 from keras.layers import Dense
 from keras.optimizers import Adam, RMSprop
-from keras.regularizers import l2, l1
+from keras.regularizers import l2
 import random, copy
 import numpy as np
 from dialogue_config import rule_requests, agent_actions
+
+
+from qlearning import DQN
 
 
 # Some of code based off of https://jaromiru.com/2016/09/27/lets-make-a-dqn-theory/
@@ -27,9 +30,6 @@ class DQNAgent:
         self.l1_reg_constant = self.C['l1_reg_constant']
         self.grad_clip_constant = self.C['grad_clip_constant']
 
-        if self.max_memory_size < self.batch_size:
-            raise ValueError('Max memory size must be at least as great as batch size!')
-
         self.state_size = state_size
         self.possible_actions = agent_actions
         self.num_actions = len(self.possible_actions)  # 40
@@ -39,14 +39,17 @@ class DQNAgent:
 
         self.reset()
 
+        self.dqn = DQN(self.state_size, self.hidden_size, self.num_actions)
+        self.clone_dqn = copy.deepcopy(self.dqn)
+
+        self.cur_bellman_err = 0
+
     def _build_model(self):
         model = Sequential()
-        # model.add(Dense(self.hidden_size, input_dim=self.state_size, activation='relu', kernel_regularizer=l1(self.l1_reg_constant)))
-        # model.add(Dense(self.num_actions, activation='linear', kernel_regularizer=l1(self.l1_reg_constant)))
-        # model.compile(loss='mse', optimizer=RMSprop(lr=self.lr, decay=self.decay_rate, epsilon=self.smooth_epsilon, clipvalue=self.grad_clip_constant))
-        model.add(Dense(self.hidden_size, input_dim=self.state_size, activation='relu'))
-        model.add(Dense(self.num_actions, activation='linear'))
-        model.compile(loss='mse', optimizer=Adam(lr=self.lr))
+        model.add(Dense(self.hidden_size, input_dim=self.state_size, activation='relu', kernel_regularizer=l2(self.l1_reg_constant)))
+        model.add(Dense(self.num_actions, activation='linear', kernel_regularizer=l2(self.l1_reg_constant)))
+        model.compile(loss='mse', optimizer=RMSprop(lr=self.lr, decay=self.decay_rate, epsilon=self.smooth_epsilon, clipvalue=self.grad_clip_constant))
+        # model.compile(loss='mse', optimizer=Adam(lr=self.lr))
         return model
 
     def reset(self):
@@ -87,7 +90,7 @@ class DQNAgent:
                 return i
 
     def _dqn_action(self, state):
-        index = np.argmax(self._dqn_predict_one(state))
+        index = self.dqn.predict(state, {}, predict_model=True)
         action = self._map_index_to_action(index)
         return index, action
 
@@ -120,38 +123,55 @@ class DQNAgent:
         return len(self.memory) == self.max_memory_size
 
     # States, actions, rewards, next_states, done
-    def train(self):
-        # Calc num of batches to run
-        num_batches = len(self.memory) // self.batch_size
-        for b in range(num_batches):
-            batch = random.sample(self.memory, self.batch_size)
+    # def train(self):
+    #     for i in range(self.num_batches):
+    #         batch = self._sample_memory(self.batch_size)
+    #         batch_size = len(batch)
+    #
+    #         states = np.array([sample[0] for sample in batch])
+    #         next_states = np.array([sample[3] for sample in batch])
+    #
+    #         assert states.shape == (batch_size, self.state_size), 'States Shape: {}'.format(states.shape)
+    #         assert next_states.shape == states.shape
+    #
+    #         beh_state_preds = self._dqn_predict(states)  # For leveling error
+    #         if not self.vanilla:
+    #             beh_next_states_preds = self._dqn_predict(next_states)  # For indexing for DDQN
+    #         tar_next_state_preds = self._dqn_predict(next_states, target=True)  # For target value for DQN (& DDQN)
+    #
+    #         inputs = np.zeros((batch_size, self.state_size))
+    #         targets = np.zeros((batch_size, self.num_actions))
+    #
+    #         for i, (s, a, r, s_, d) in enumerate(batch):
+    #             t = beh_state_preds[i]
+    #
+    #             # NOTE: I havent check that this line works as a DDQN should but i assume it does...
+    #             if not self.vanilla:
+    #                 t[a] = r + self.gamma * tar_next_state_preds[i][np.argmax(beh_next_states_preds[i])] * (not d)
+    #             else:
+    #                 t[a] = r + self.gamma * np.amax(tar_next_state_preds[i]) * (not d)
+    #             inputs[i] = s
+    #             targets[i] = t
+    #
+    #         self.beh_model.train_on_batch(inputs, targets)
 
-            states = np.array([sample[0] for sample in batch])
-            next_states = np.array([sample[3] for sample in batch])
+    def train(self, batch_size=16, num_batches=1):
+        """ Train DQN with experience replay """
 
-            assert states.shape == (self.batch_size, self.state_size), 'States Shape: {}'.format(states.shape)
-            assert next_states.shape == states.shape
+        for iter_batch in range(num_batches):
+            self.cur_bellman_err = 0
+            for iter in range(int(len(self.memory) / (batch_size))):
+                batch = [random.choice(self.memory) for i in range(batch_size)]
+                batch_struct = self.dqn.singleBatch(batch, {'gamma': self.gamma}, self.clone_dqn)
+                self.cur_bellman_err += batch_struct['cost']['total_cost']
 
-            beh_state_preds = self._dqn_predict(states)  # For leveling error
-            if not self.vanilla:
-                beh_next_states_preds = self._dqn_predict(next_states)  # For indexing for DDQN
-            tar_next_state_preds = self._dqn_predict(next_states, target=True)  # For target value for DQN (& DDQN)
+            print("cur bellman err %.4f, experience replay pool %s" % (
+            float(self.cur_bellman_err) / len(self.memory), len(self.memory)))
 
-            inputs = np.zeros((self.batch_size, self.state_size))
-            targets = np.zeros((self.batch_size, self.num_actions))
-
-            for i, (s, a, r, s_, d) in enumerate(batch):
-                t = beh_state_preds[i]
-                if not self.vanilla:
-                    t[a] = r + self.gamma * tar_next_state_preds[i][np.argmax(beh_next_states_preds[i])] * (not d)
-                else:
-                    t[a] = r + self.gamma * np.amax(tar_next_state_preds[i]) * (not d)
-
-                inputs[i] = s
-                targets[i] = t
-
-            # Note: Have to train as you go (cuz of how zeroing the targets work)
-            self.beh_model.fit(inputs, targets, epochs=1, verbose=0)
+    def _sample_memory(self, num):
+        new_num = min(num, len(self.memory))
+        return random.sample(self.memory, new_num)
 
     def copy(self):
-        self.tar_model.set_weights(self.beh_model.get_weights())
+        # self.tar_model.set_weights(self.beh_model.get_weights())
+        self.clone_dqn = copy.deepcopy(self.dqn)
