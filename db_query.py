@@ -1,5 +1,6 @@
 from collections import defaultdict
 from dialogue_config import no_query_keys, usersim_default_key
+import copy
 
 
 class DBQuery:
@@ -16,11 +17,18 @@ class DBQuery:
     def fill_inform_slot(self, inform_slot_to_fill, current_inform_slots):
         assert len(inform_slot_to_fill) == 1
 
+        key = list(inform_slot_to_fill.keys())[0]  # Only one
+
+        # Todo: Note this is a change for mine --- NEED TO TEST
+        # Remove the inform slot fo ill key from current informs (deep copy) so it doesnt affect it
+        # current_informs = copy.deepcopy(current_inform_slots)
+        # current_informs.pop(key, None)
+        # ----------------------------------------
+
         # db_results is a dict of dict in the same exact format as the db, its just a subset of the db
         db_results = self.get_db_results(current_inform_slots)
 
         filled_inform = {}
-        key = list(inform_slot_to_fill.keys())[0]  # Only one
         # If def key (ie ticket) then set it and continue
         if key == self.match_key:
             filled_inform[key] = 'match available' if len(db_results) > 0 else 'no match available'

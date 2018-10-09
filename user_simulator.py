@@ -160,12 +160,11 @@ class UserSimulator:
         return user_response, reward, done, True if succ is 1 else False
 
     def _reward_function(self, succ):
+        reward = -1
         if succ == FAIL:
-            reward = -self.max_round
+            reward += -self.max_round
         elif succ == SUCCESS:
-            reward = 2*self.max_round
-        else:
-            reward = -1
+            reward += 2*self.max_round
         return reward
 
     def response_to_request(self, agent_action):

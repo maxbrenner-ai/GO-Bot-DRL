@@ -5,6 +5,7 @@ from dqn_agent_2 import DQNAgent as DQNAgent_2
 from state_tracker import StateTracker
 import pickle
 import json
+import math
 
 
 # Load Constants Json into Dict
@@ -87,7 +88,7 @@ def warmup_run():
                 done_warmup = True
                 done = True
 
-        print('Episode: {} Succ.: {} Reward: {}'.format(ep, succ, ep_reward))
+        # print('Episode: {} Succ.: {} Reward: {}'.format(ep, succ, ep_reward))
 
     print("...Warmup Ended")
 
@@ -96,6 +97,9 @@ def warmup_run():
 def train_run():
     print("Train Started...")
     ep = 0
+    period_rew_total = 0
+    period_min_reward = math.inf
+    period_max_reward = -math.inf
     period_succ_total = 0
     succ_rate_best = 0.0
     while ep < NUM_EP_TRAIN:
@@ -114,6 +118,7 @@ def train_run():
             # User sim. takes action given agent action
             user_action, reward, done, succ = user_sim.step(agent_action, round_num)
             ep_reward += reward
+            period_rew_total += reward
             if not done:
                 # Infuse error into semantic frame level user sim. action
                 emc_0.infuse_error(user_action)
@@ -123,7 +128,10 @@ def train_run():
             next_state = state_tracker.get_state(done)
             dqn_agent.add_experience(state, agent_action_index, reward, next_state, done)
 
-        print('Episode: {} Succ.: {} Reward: {}'.format(ep, succ, ep_reward))
+        period_min_reward = min(period_min_reward, ep_reward)
+        period_max_reward = max(period_max_reward, ep_reward)
+
+        # print('Episode: {} Succ.: {} Reward: {}'.format(ep, succ, ep_reward))
 
         if succ:
             period_succ_total += 1
@@ -131,15 +139,19 @@ def train_run():
         if ep % TRAIN_FREQ == 0:
             # Check succ rate
             succ_rate = period_succ_total / TRAIN_FREQ
-            print('Succ. Rate: {} Current Best: {} Mem. Size: {}'.format(succ_rate, succ_rate_best, len(dqn_agent.memory)))
+            avg_reward = period_rew_total / TRAIN_FREQ
+            # print('Succ. Rate: {} Current Best: {} Mem. Size: {}'.format(succ_rate, succ_rate_best, len(dqn_agent.memory)))
             # Flush
             if succ_rate >= succ_rate_best and succ_rate >= SUCCESS_RATE_THRESHOLD:
                 dqn_agent.empty_memory()
             # Update current best succ rate
             if succ_rate > succ_rate_best:
-                print('NEW BEST: {}'.format(succ_rate))
+                print('Episode: {} NEW BEST SUCC. RATE: {} Avg Reward: {} Min Rew: {} Max Rew: {}'.format(ep, succ_rate, avg_reward, period_min_reward, period_max_reward))
                 succ_rate_best = succ_rate
             period_succ_total = 0
+            period_rew_total = 0
+            period_min_reward = math.inf
+            period_max_reward = -math.inf
             # Copy
             dqn_agent.copy()
             # Train

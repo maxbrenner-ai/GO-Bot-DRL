@@ -19,7 +19,7 @@
     "dqn_hidden_size": 80,
     "epsilon_init": 0.0,
     "gamma": 0.9,
-    "max_mem_size": 1000000000,
+    "max_mem_size": 500000,
     "decay_rate": 0.999,
     "smooth_eps": 1e-8,
     "grad_clip_constant": 1e-3,

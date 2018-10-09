@@ -12,7 +12,6 @@ class EMC:
         self.intent_error_prob = constants['emc']['intent_error_prob']
         self.intents = usersim_intents
 
-    # Todo: check if i even need to use return in these methods...
     def infuse_error(self, frame):
         informs_dict = frame['inform_slots']
         for key in list(frame['inform_slots'].keys()):

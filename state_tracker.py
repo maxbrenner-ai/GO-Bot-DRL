@@ -148,6 +148,7 @@ class StateTracker:
             assert key != 'match_found'
             assert value != 'PLACEHOLDER', 'KEY: {}'.format(key)
             self.current_informs[key] = value  # add into inform_slots
+            print('final current informs: {}'.format(self.current_informs))
         # Then check if the intent is match_found and fill the informs with the current informs from here
         elif agent_action['intent'] == 'match_found':
             assert not agent_action['inform_slots'], 'Cannot inform and have intent of match found!'
