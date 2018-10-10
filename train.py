@@ -3,7 +3,7 @@ from emc import EMC
 from dqn_agent import DQNAgent
 from dqn_agent_2 import DQNAgent as DQNAgent_2
 from state_tracker import StateTracker
-import pickle
+import pickle, csv
 import json
 import math
 
@@ -148,6 +148,11 @@ def train_run():
             if succ_rate > succ_rate_best:
                 print('Episode: {} NEW BEST SUCC. RATE: {} Avg Reward: {} Min Rew: {} Max Rew: {}'.format(ep, succ_rate, avg_reward, period_min_reward, period_max_reward))
                 succ_rate_best = succ_rate
+            # ------------
+            if ep % 1000 == 0:
+                write_data('data/baseline/ninth.csv',
+                           [ep, succ_rate, succ_rate_best, avg_reward, period_min_reward, period_max_reward])
+            # ------------
             period_succ_total = 0
             period_rew_total = 0
             period_min_reward = math.inf
@@ -156,6 +161,7 @@ def train_run():
             dqn_agent.copy()
             # Train
             dqn_agent.train()
+
     print("...Train Ended")
 
 
@@ -172,6 +178,10 @@ def ep_reset():
     # Finally, reset agent
     dqn_agent.reset()
 
+def write_data(file_path, data):
+    with open(file_path, 'a', newline='') as csvfile:
+        wr = csv.writer(csvfile)
+        wr.writerow(list(data))
 
 # def test_run():
 #     ep = 0
