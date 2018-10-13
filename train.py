@@ -150,7 +150,7 @@ def train_run():
                 succ_rate_best = succ_rate
             # ------------
             if ep % 1000 == 0:
-                write_data('data/baseline/ninth.csv',
+                write_data('data/baseline/tenth.csv',
                            [ep, succ_rate, succ_rate_best, avg_reward, period_min_reward, period_max_reward])
             # ------------
             period_succ_total = 0
