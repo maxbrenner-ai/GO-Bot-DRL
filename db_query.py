@@ -19,14 +19,14 @@ class DBQuery:
 
         key = list(inform_slot_to_fill.keys())[0]  # Only one
 
-        # Todo: Note this is a change for mine --- NEED TO TEST
+        # Todo: Note this is a change for mine --- TESTED
         # Remove the inform slot fo ill key from current informs (deep copy) so it doesnt affect it
-        # current_informs = copy.deepcopy(current_inform_slots)
-        # current_informs.pop(key, None)
+        current_informs = copy.deepcopy(current_inform_slots)
+        current_informs.pop(key, None)
         # ----------------------------------------
 
         # db_results is a dict of dict in the same exact format as the db, its just a subset of the db
-        db_results = self.get_db_results(current_inform_slots)
+        db_results = self.get_db_results(current_informs)
 
         filled_inform = {}
         # If def key (ie ticket) then set it and continue
@@ -112,19 +112,26 @@ class DBQuery:
 
         for id in self.database.keys():
             all_slots_match = True
-            for slot in current_informs.keys():
+            for CI_key, CI_value in current_informs.items():
                 # Unlike TC-bot i make it so if the user doesnt care about the value then its count goes up for every item in the db
-                # Todo: Actually for now i will do what they do so i can test and compare results, but will prolly change (at least change to if KEY in it AND VALUE is anything then go up)
-                if current_informs[slot] == 'anything' or current_informs[slot] in self.no_query:
-                    # db_results[slot] += 1
+                # Todo: CHANGED:: ------ TESTED ---- This might require more testing (and with longer training sess)
+                # FROM:
+                # if current_informs[slot] == 'anything' or current_informs[slot] in self.no_query:
+                #     continue
+                # TO:
+                if CI_key in self.no_query:
                     continue
+                if CI_value == 'anything':
+                    db_results[CI_key] += 1
+                    continue
+                # -------------
                 # Todo: So they count a inform slot key not being in the current movie in the db as a failure
                 # meaning that they dont count it towards all matching and they dont add 1 to the count for that
                 # slot itself.... idk if this is okay
-                if slot in self.database[id].keys():
+                if CI_key in self.database[id].keys():
                     # TOdo: make it so lower isnt nec.
-                    if current_informs[slot].lower() == self.database[id][slot].lower():
-                        db_results[slot] += 1
+                    if CI_value.lower() == self.database[id][CI_key].lower():
+                        db_results[CI_key] += 1
                     else:
                         all_slots_match = False
                 else:

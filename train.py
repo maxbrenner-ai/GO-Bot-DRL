@@ -43,145 +43,157 @@ db_dict = pickle.load(open(DICT_FILE_PATH, 'rb'), encoding='latin1')
 # Load Goal File
 user_goals = pickle.load(open(USER_GOALS_FILE_PATH, 'rb'), encoding='latin1')
 
-# Init. Objects
-user_sim = UserSimulator(user_goals, constants)
-emc_0 = EMC(db_dict, constants)
-state_tracker = StateTracker(database, constants)
-dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)
+def run_it(file_index):
+
+    # Init. Objects
+    user_sim = UserSimulator(user_goals, constants)
+    emc_0 = EMC(db_dict, constants)
+    state_tracker = StateTracker(database, constants)
+    dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)
+
+    csv_name = 'file_' + str(file_index)
+    file_path = 'data/anything_get_db_results_for_slots/' + csv_name + '.csv'
+
+    # Temp --- Make CSV file
+    with open(file_path, 'w') as csvfile:
+        pass
+
+    # Warm-Up loop
+    def warmup_run():
+        print('Warmup Started...')
+        ep = 0
+        total_step = 0
+        done_warmup = False
+        while not done_warmup:
+            ep_reset()
+            ep += 1
+            ep_step = 0
+            ep_reward = 0
+            done = False
+            while not done:
+                # Get state tracker state
+                state = state_tracker.get_state()
+                # Agent takes action given state tracker's representation of dialogue
+                agent_action_index, agent_action = dqn_agent.get_action(state, use_rule=True)
+                # Update state tracker with the agent's action
+                round_num = state_tracker.update_state_agent(agent_action)
+                # User sim. takes action given agent action
+                user_action, reward, done, succ = user_sim.step(agent_action, round_num)
+                ep_reward += reward
+                if not done:
+                    # Infuse error into semantic frame level user sim. action
+                    emc_0.infuse_error(user_action)
+                    # Update state tracker with user sim. action
+                state_tracker.update_state_user(user_action)
+                # Add memory
+                next_state = state_tracker.get_state(done)
+                dqn_agent.add_experience(state, agent_action_index, reward, next_state, done)
+
+                ep_step += 1
+                total_step += 1
+
+                if total_step == WARMUP_MEM or dqn_agent.is_memory_full():
+                    done_warmup = True
+                    done = True
+
+            # print('Episode: {} Succ.: {} Reward: {}'.format(ep, succ, ep_reward))
+
+        print("...Warmup Ended")
 
 
-# Warm-Up loop
-def warmup_run():
-    print('Warmup Started...')
-    ep = 0
-    total_step = 0
-    done_warmup = False
-    while not done_warmup:
-        ep_reset()
-        ep += 1
-        ep_step = 0
-        ep_reward = 0
-        done = False
-        while not done:
-            # Get state tracker state
-            state = state_tracker.get_state()
-            # Agent takes action given state tracker's representation of dialogue
-            agent_action_index, agent_action = dqn_agent.get_action(state, use_rule=True)
-            # Update state tracker with the agent's action
-            round_num = state_tracker.update_state_agent(agent_action)
-            # User sim. takes action given agent action
-            user_action, reward, done, succ = user_sim.step(agent_action, round_num)
-            ep_reward += reward
-            if not done:
-                # Infuse error into semantic frame level user sim. action
-                emc_0.infuse_error(user_action)
+    # Training Loop
+    def train_run():
+        print("Train Started...")
+        ep = 0
+        period_rew_total = 0
+        period_min_reward = math.inf
+        period_max_reward = -math.inf
+        period_succ_total = 0
+        succ_rate_best = 0.0
+        while ep < NUM_EP_TRAIN:
+            ep_reset()
+            # Inner loop (by conversation)
+            ep += 1
+            ep_reward = 0
+            done = False
+            while not done:
+                # Get state tracker state
+                state = state_tracker.get_state()
+                # Agent takes action given state tracker's representation of dialogue
+                agent_action_index, agent_action = dqn_agent.get_action(state)
+                # Update state tracker with the agent's action
+                round_num = state_tracker.update_state_agent(agent_action)
+                # User sim. takes action given agent action
+                user_action, reward, done, succ = user_sim.step(agent_action, round_num)
+                ep_reward += reward
+                period_rew_total += reward
+                if not done:
+                    # Infuse error into semantic frame level user sim. action
+                    emc_0.infuse_error(user_action)
                 # Update state tracker with user sim. action
-            state_tracker.update_state_user(user_action)
-            # Add memory
-            next_state = state_tracker.get_state(done)
-            dqn_agent.add_experience(state, agent_action_index, reward, next_state, done)
+                state_tracker.update_state_user(user_action)
+                # Add memory
+                next_state = state_tracker.get_state(done)
+                dqn_agent.add_experience(state, agent_action_index, reward, next_state, done)
 
-            ep_step += 1
-            total_step += 1
+            period_min_reward = min(period_min_reward, ep_reward)
+            period_max_reward = max(period_max_reward, ep_reward)
 
-            if total_step == WARMUP_MEM or dqn_agent.is_memory_full():
-                done_warmup = True
-                done = True
+            # print('Episode: {} Succ.: {} Reward: {}'.format(ep, succ, ep_reward))
 
-        # print('Episode: {} Succ.: {} Reward: {}'.format(ep, succ, ep_reward))
+            if succ:
+                period_succ_total += 1
 
-    print("...Warmup Ended")
+            if ep % TRAIN_FREQ == 0:
+                # Check succ rate
+                succ_rate = period_succ_total / TRAIN_FREQ
+                avg_reward = period_rew_total / TRAIN_FREQ
+                # print('Succ. Rate: {} Current Best: {} Mem. Size: {}'.format(succ_rate, succ_rate_best, len(dqn_agent.memory)))
+                # Flush
+                if succ_rate >= succ_rate_best and succ_rate >= SUCCESS_RATE_THRESHOLD:
+                    dqn_agent.empty_memory()
+                # Update current best succ rate
+                if succ_rate > succ_rate_best:
+                    print('Episode: {} NEW BEST SUCC. RATE: {} Avg Reward: {} Min Rew: {} Max Rew: {}'.format(ep, succ_rate, avg_reward, period_min_reward, period_max_reward))
+                    succ_rate_best = succ_rate
+                # ------------
+                if ep % 2000 == 0:
+                    write_data(file_path,
+                               [succ_rate, succ_rate_best, avg_reward])
+                # ------------
+                period_succ_total = 0
+                period_rew_total = 0
+                period_min_reward = math.inf
+                period_max_reward = -math.inf
+                # Copy
+                dqn_agent.copy()
+                # Train
+                dqn_agent.train()
 
-
-# Training Loop
-def train_run():
-    print("Train Started...")
-    ep = 0
-    period_rew_total = 0
-    period_min_reward = math.inf
-    period_max_reward = -math.inf
-    period_succ_total = 0
-    succ_rate_best = 0.0
-    while ep < NUM_EP_TRAIN:
-        ep_reset()
-        # Inner loop (by conversation)
-        ep += 1
-        ep_reward = 0
-        done = False
-        while not done:
-            # Get state tracker state
-            state = state_tracker.get_state()
-            # Agent takes action given state tracker's representation of dialogue
-            agent_action_index, agent_action = dqn_agent.get_action(state)
-            # Update state tracker with the agent's action
-            round_num = state_tracker.update_state_agent(agent_action)
-            # User sim. takes action given agent action
-            user_action, reward, done, succ = user_sim.step(agent_action, round_num)
-            ep_reward += reward
-            period_rew_total += reward
-            if not done:
-                # Infuse error into semantic frame level user sim. action
-                emc_0.infuse_error(user_action)
-            # Update state tracker with user sim. action
-            state_tracker.update_state_user(user_action)
-            # Add memory
-            next_state = state_tracker.get_state(done)
-            dqn_agent.add_experience(state, agent_action_index, reward, next_state, done)
-
-        period_min_reward = min(period_min_reward, ep_reward)
-        period_max_reward = max(period_max_reward, ep_reward)
-
-        # print('Episode: {} Succ.: {} Reward: {}'.format(ep, succ, ep_reward))
-
-        if succ:
-            period_succ_total += 1
-
-        if ep % TRAIN_FREQ == 0:
-            # Check succ rate
-            succ_rate = period_succ_total / TRAIN_FREQ
-            avg_reward = period_rew_total / TRAIN_FREQ
-            # print('Succ. Rate: {} Current Best: {} Mem. Size: {}'.format(succ_rate, succ_rate_best, len(dqn_agent.memory)))
-            # Flush
-            if succ_rate >= succ_rate_best and succ_rate >= SUCCESS_RATE_THRESHOLD:
-                dqn_agent.empty_memory()
-            # Update current best succ rate
-            if succ_rate > succ_rate_best:
-                print('Episode: {} NEW BEST SUCC. RATE: {} Avg Reward: {} Min Rew: {} Max Rew: {}'.format(ep, succ_rate, avg_reward, period_min_reward, period_max_reward))
-                succ_rate_best = succ_rate
-            # ------------
-            if ep % 1000 == 0:
-                write_data('data/baseline/tenth.csv',
-                           [ep, succ_rate, succ_rate_best, avg_reward, period_min_reward, period_max_reward])
-            # ------------
-            period_succ_total = 0
-            period_rew_total = 0
-            period_min_reward = math.inf
-            period_max_reward = -math.inf
-            # Copy
-            dqn_agent.copy()
-            # Train
-            dqn_agent.train()
-
-    print("...Train Ended")
+        print("...Train Ended")
 
 
-# User sim takes first action
-def ep_reset():
-    # First reset the state tracker
-    state_tracker.reset()
-    # Then pick an init user action
-    user_action = user_sim.reset()
-    # Infuse with error
-    user_error_action = emc_0.infuse_error(user_action)
-    # And update state tracker
-    state_tracker.update_state_user(user_error_action)
-    # Finally, reset agent
-    dqn_agent.reset()
+    # User sim takes first action
+    def ep_reset():
+        # First reset the state tracker
+        state_tracker.reset()
+        # Then pick an init user action
+        user_action = user_sim.reset()
+        # Infuse with error
+        user_error_action = emc_0.infuse_error(user_action)
+        # And update state tracker
+        state_tracker.update_state_user(user_error_action)
+        # Finally, reset agent
+        dqn_agent.reset()
 
-def write_data(file_path, data):
-    with open(file_path, 'a', newline='') as csvfile:
-        wr = csv.writer(csvfile)
-        wr.writerow(list(data))
+    def write_data(file_path, data):
+        with open(file_path, 'a', newline='') as csvfile:
+            wr = csv.writer(csvfile)
+            wr.writerow(list(data))
+
+    warmup_run()
+    train_run()
+
 
 # def test_run():
 #     ep = 0
@@ -209,8 +221,8 @@ def write_data(file_path, data):
 
 
 def main():
-    warmup_run()
-    train_run()
+    for i in range(10):
+        run_it(i)
 
 
 if __name__ == "__main__":
