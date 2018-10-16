@@ -52,7 +52,7 @@ def run_it(file_index):
     dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)
 
     csv_name = 'file_' + str(file_index)
-    file_path = 'data/anything_get_db_results_for_slots/' + csv_name + '.csv'
+    file_path = 'data/dump/' + csv_name + '.csv'
 
     # Temp --- Make CSV file
     with open(file_path, 'w') as csvfile:
@@ -78,7 +78,7 @@ def run_it(file_index):
                 # Update state tracker with the agent's action
                 round_num = state_tracker.update_state_agent(agent_action)
                 # User sim. takes action given agent action
-                user_action, reward, done, succ = user_sim.step(agent_action, round_num)
+                user_action, reward, done, succ = user_sim.step(agent_action, round_num, state_tracker.current_informs)
                 ep_reward += reward
                 if not done:
                     # Infuse error into semantic frame level user sim. action
@@ -124,7 +124,7 @@ def run_it(file_index):
                 # Update state tracker with the agent's action
                 round_num = state_tracker.update_state_agent(agent_action)
                 # User sim. takes action given agent action
-                user_action, reward, done, succ = user_sim.step(agent_action, round_num)
+                user_action, reward, done, succ = user_sim.step(agent_action, round_num, state_tracker.current_informs)
                 ep_reward += reward
                 period_rew_total += reward
                 if not done:

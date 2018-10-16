@@ -130,12 +130,6 @@ class StateTracker:
              agent_request_slots_rep, current_slots_rep, turn_rep, turn_onehot_rep, kb_binary_rep, kb_count_rep]).flatten()
         return state_representation
 
-    # Todo: So because we dont filter out if the current informs already holds the inform for what teh action wants to inform
-    # it makes it so teh agent can't re-inform ie query again for a new value. So 2 options:
-    # Option 1: Just take out the current inform if it matches the one the agent wants to inform so it doesnt constrain the search
-    # Option 2: Do option 1 if the inform came from the agent, and just return the current inform if it came from the user (since it
-    # is more important that it is kept)
-    # Try option first unless it doesnt imrpove results
     def update_state_agent(self, agent_action):
         # First check the informs (if there are any)
         # If action is to inform
