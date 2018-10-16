@@ -332,8 +332,8 @@ class UserSimulator:
         for key, value in self.state['history_slots'].items():
             # TODO: REMOVING CLAUSe----- JK if i do this then i must check that ticket is a VALUE MATCH
             # if any no value match in constraints then fail
-            # if value == 'no match available':
-            #     return FAIL
+            if value == 'no match available':
+                return FAIL
             # --------------------------
             # Todo: Havent gotten to test this (hasnt happened)
             if key in self.goal['inform_slots']:
