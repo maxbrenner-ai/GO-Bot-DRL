@@ -4,9 +4,13 @@ import random
 
 '''
 
-So I am going to chaneg this around once i make sure it works first. I will be adding 'check_match_found' as an agent
-intent, and make this the ONLY way to inform match. This will serve as the agent figuring out if EVEYTHING (not just 
-constraint checking) is good. Response to done will mainly just be a final check but not have much else. 
+New Plan: match_found intent replaces all informs with the ticket its selected informs! Not with all the current informs.
+Also it fills the match slot with the ID of the match from the DB! Instead of just value match or no value match.
+In response to match found the usersim replies thanks (or accept) if all of the informs of goal (exlcuding any non-query 
+slots such as nop) and the values match. And reject otherwise. All response to done does is check to make sure the 
+constraint check is good (from match found response) and the stacks are empty. IMPORTANT: To avoid the agent making
+a match found and then mucking up the match by informing match (in a normal inform) that no longer works: make it so
+that match can only be informed by match found intent and not as a normal inform
 
 Also I will be getting rid of 'thanks' probably
 
