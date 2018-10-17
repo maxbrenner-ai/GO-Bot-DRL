@@ -18,13 +18,17 @@ Also I will be getting rid of 'thanks' probably
 
 
 class UserSimulator:
-    def __init__(self, goal_list, constants):
+    def __init__(self, goal_list, constants, database):
         self.goal_list = goal_list
         self.max_round = constants['run']['max_round_num']
         # This is eqivalent to ticket in the moviedatabase, it MUST be in req of user sim goal
         self.default_key = usersim_default_key
         # A list of REQUIRED to be in the first action inform keys
         self.init_informs = usersim_required_init_inform_keys
+
+        # TEMP ----
+        self.database = database
+        # ---------
 
     def reset(self):
         self.goal = random.choice(self.goal_list)
@@ -86,7 +90,7 @@ class UserSimulator:
 
         return user_response
 
-    def step(self, agent_action, round_num, st_informs):
+    def step(self, agent_action, round_num):
         # print('ROUND: {}'.format(round_num))
         # print('agent action: {}'.format(agent_action))
 
@@ -120,7 +124,7 @@ class UserSimulator:
             if agent_intent == 'match_found':
                 self.response_to_match_found(agent_action)
             if agent_intent == 'done':
-                succ = self.response_to_done(st_informs)
+                succ = self.response_to_done()
                 self.state['intent'] = 'done'
                 self.state['request_slots'].clear()
                 done = True
@@ -215,6 +219,8 @@ class UserSimulator:
         agent_inform_key = list(agent_action['inform_slots'].keys())[0]
         agent_inform_value = agent_action['inform_slots'][agent_inform_key]
 
+        assert agent_inform_key != self.default_key
+
         # Add all informs (by agent too) to hist slots
         self.state['history_slots'][agent_inform_key] = agent_inform_value
         # Remove from rest slots if in it
@@ -292,74 +298,106 @@ class UserSimulator:
         self.state['request_slots'].pop(self.default_key, None)
         # ----------
 
+        # Check if the ticket is not no value match
+        if agent_informs[self.default_key] == 'no match available':
+            self.constraint_check = FAIL
+
         # Check to see if all goal informs are in the agent informs, and that the values match
         for key, value in self.goal['inform_slots'].items():
             assert value != None
             # Will return true if key not in agent informs OR if value does not match value of agent informs[key]
             if value != agent_informs.get(key, None):
-                self.state['intent'] = 'reject'
-                self.state['request_slots'].clear()
                 self.constraint_check = FAIL
                 break
 
-    def response_to_done(self, st_informs):
-        # print('done 1')
-        # Case 1: Check constraits from match found
         if self.constraint_check == FAIL:
-            # print('constraint fail')
+            self.state['intent'] = 'reject'
+            self.state['request_slots'].clear()
+
+    def response_to_done(self):
+        if self.constraint_check == FAIL:
             return FAIL
 
-        # Case 2: Check if requests and rests empty
-        # Todo: So they remove the ticket slot before see if rest are empty... idk why, if it doesnt affect performance then remove this
-        # Will return False if not in rest slots, and the value of 'UNK' if it is
-        # Assumption is if the rests are empty then so are the requests
-        # CHANGED FROM: ---------------
-        # if not self.state['rest_slots']:
-        #     assert not self.state['request_slots']
-        # def_in = self.state['rest_slots'].pop(self.default_key, False)
-        # return_here = False
-        # if self.state['rest_slots']:
-        #     return_here = True
-        # if def_in == 'UNK':
-        #     self.state['rest_slots'][self.default_key] = 'UNK'
-        # if return_here:
-        #     # print('empty fail')
-        #     return FAIL
-        # TO:
         if not self.state['rest_slots']:
             assert not self.state['request_slots']
         if self.state['rest_slots']:
             return FAIL
-        # -----------------------------
 
-        # Case 3: Check if hist slots contain any NO VALUE MATCH
-        for key, value in self.state['history_slots'].items():
-            # TODO: REMOVING CLAUSe----- JK if i do this then i must check that ticket is a VALUE MATCH
-            # if any no value match in constraints then fail
-            if value == 'no match available':
-                return FAIL
-            # --------------------------
-            # Todo: Havent gotten to test this (hasnt happened)
-            if key in self.goal['inform_slots']:
-                # If informs given by agent/history do not match the goal contraints then fail
-                if value != self.goal['inform_slots'][key]:
-                    # print('wrong value fail')
-                    return FAIL
+        # TEMP: ----
 
-        # Todo: VERYYYYYYYYYYYYYYYYYYYYYYYY IMPORTANT:
-        # The only reason i bleive that they ONLY add ticket if no match avail (in intent match found) and pop the ticket
-        # when checking if the rest stack is empty in done is because they check the hist slots to see if no match avail
+        assert self.state['history_slots'][self.default_key] != 'no match available'
 
+        match = copy.deepcopy(self.database[self.state['history_slots'][self.default_key]])
 
-        assert self.state['history_slots'][self.default_key] == 'match available'
-
-        # This checks if the final info is wrong....
         for key, value in self.goal['inform_slots'].items():
             assert value != None
             # Will return true if key not in agent informs OR if value does not match value of agent informs[key]
-            if value != st_informs.get(key, None):
-                print('\n----- HTTTTT -------\nGoal Informs: {}\nST Informs: {}'.format(self.goal['inform_slots'], st_informs))
+            if value != match.get(key, None):
+                assert True is False, 'match: {}\ngoal: {}'.format(match, self.goal)
                 break
-        # ------------
+
+        # ----------
 
         return SUCCESS
+
+    # def response_to_done(self, st_informs):
+    #     # print('done 1')
+    #     # Case 1: Check constraits from match found
+    #     if self.constraint_check == FAIL:
+    #         # print('constraint fail')
+    #         return FAIL
+    #
+    #     # Case 2: Check if requests and rests empty
+    #     # Todo: So they remove the ticket slot before see if rest are empty... idk why, if it doesnt affect performance then remove this
+    #     # Will return False if not in rest slots, and the value of 'UNK' if it is
+    #     # Assumption is if the rests are empty then so are the requests
+    #     # CHANGED FROM: ---------------
+    #     # if not self.state['rest_slots']:
+    #     #     assert not self.state['request_slots']
+    #     # def_in = self.state['rest_slots'].pop(self.default_key, False)
+    #     # return_here = False
+    #     # if self.state['rest_slots']:
+    #     #     return_here = True
+    #     # if def_in == 'UNK':
+    #     #     self.state['rest_slots'][self.default_key] = 'UNK'
+    #     # if return_here:
+    #     #     # print('empty fail')
+    #     #     return FAIL
+    #     # TO:
+    #     if not self.state['rest_slots']:
+    #         assert not self.state['request_slots']
+    #     if self.state['rest_slots']:
+    #         return FAIL
+    #     # -----------------------------
+    #
+    #     # Case 3: Check if hist slots contain any NO VALUE MATCH
+    #     for key, value in self.state['history_slots'].items():
+    #         # TODO: REMOVING CLAUSe----- JK if i do this then i must check that ticket is a VALUE MATCH
+    #         # if any no value match in constraints then fail
+    #         if value == 'no match available':
+    #             return FAIL
+    #         # --------------------------
+    #         # Todo: Havent gotten to test this (hasnt happened)
+    #         if key in self.goal['inform_slots']:
+    #             # If informs given by agent/history do not match the goal contraints then fail
+    #             if value != self.goal['inform_slots'][key]:
+    #                 # print('wrong value fail')
+    #                 return FAIL
+    #
+    #     # Todo: VERYYYYYYYYYYYYYYYYYYYYYYYY IMPORTANT:
+    #     # The only reason i bleive that they ONLY add ticket if no match avail (in intent match found) and pop the ticket
+    #     # when checking if the rest stack is empty in done is because they check the hist slots to see if no match avail
+    #
+    #
+    #     assert self.state['history_slots'][self.default_key] == 'match available'
+    #
+    #     # This checks if the final info is wrong....
+    #     for key, value in self.goal['inform_slots'].items():
+    #         assert value != None
+    #         # Will return true if key not in agent informs OR if value does not match value of agent informs[key]
+    #         if value != st_informs.get(key, None):
+    #             print('\n----- HTTTTT -------\nGoal Informs: {}\nST Informs: {}'.format(self.goal['inform_slots'], st_informs))
+    #             break
+    #     # ------------
+    #
+    #     return SUCCESS

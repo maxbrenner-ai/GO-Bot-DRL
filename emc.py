@@ -34,6 +34,7 @@ class EMC:
             frame['intent'] = random.choice(self.intents)
         return frame
 
+    # Todo: check how it deals with numberofpeople as the inform since thats not in the dict...
     def _slot_value_noise(self, key, informs_dict):
         if key in self.movie_dict.keys():
             informs_dict[key] = random.choice(self.movie_dict[key])

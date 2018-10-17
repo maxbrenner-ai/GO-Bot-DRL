@@ -31,6 +31,9 @@ agent_actions = [
     {'intent': 'match_found', 'inform_slots': {}, 'request_slots': {}}
 ]
 for slot in agent_inform_slots:
+    # Must use intent match found to inform this, but still have to keep in agent inform slots
+    if slot == usersim_default_key:
+        continue
     agent_actions.append({'intent': 'inform', 'inform_slots': {slot: 'PLACEHOLDER'}, 'request_slots': {}})
 for slot in agent_request_slots:
     agent_actions.append({'intent': 'request', 'inform_slots': {}, 'request_slots': {slot: 'UNK'}})
@@ -59,4 +62,4 @@ all_intents = ['inform', 'request', 'done', 'match_found', 'thanks', 'reject']
 all_slots = ['actor', 'actress', 'city', 'critic_rating', 'date', 'description', 'distanceconstraints',
              'genre', 'greeting', 'implicit_value', 'movie_series', 'moviename', 'mpaa_rating',
              'numberofpeople', 'numberofkids', 'other', 'price', 'seating', 'starttime', 'state',
-             'theater', 'theater_chain', 'video_format', 'zip', 'result', 'ticket', 'mc_list']
+             'theater', 'theater_chain', 'video_format', 'zip', 'result', usersim_default_key, 'mc_list']

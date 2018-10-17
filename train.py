@@ -46,7 +46,7 @@ user_goals = pickle.load(open(USER_GOALS_FILE_PATH, 'rb'), encoding='latin1')
 def run_it(file_index):
 
     # Init. Objects
-    user_sim = UserSimulator(user_goals, constants)
+    user_sim = UserSimulator(user_goals, constants, database)
     emc_0 = EMC(db_dict, constants)
     state_tracker = StateTracker(database, constants)
     dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)
@@ -78,7 +78,7 @@ def run_it(file_index):
                 # Update state tracker with the agent's action
                 round_num = state_tracker.update_state_agent(agent_action)
                 # User sim. takes action given agent action
-                user_action, reward, done, succ = user_sim.step(agent_action, round_num, state_tracker.current_informs)
+                user_action, reward, done, succ = user_sim.step(agent_action, round_num)
                 ep_reward += reward
                 if not done:
                     # Infuse error into semantic frame level user sim. action
@@ -124,7 +124,7 @@ def run_it(file_index):
                 # Update state tracker with the agent's action
                 round_num = state_tracker.update_state_agent(agent_action)
                 # User sim. takes action given agent action
-                user_action, reward, done, succ = user_sim.step(agent_action, round_num, state_tracker.current_informs)
+                user_action, reward, done, succ = user_sim.step(agent_action, round_num)
                 ep_reward += reward
                 period_rew_total += reward
                 if not done:
