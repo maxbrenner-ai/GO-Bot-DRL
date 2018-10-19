@@ -151,7 +151,7 @@ class StateTracker:
                 # We arbitrarily pick the first value of the dict
                 key, value = list(db_results.items())[0]
                 agent_action['inform_slots'] = copy.deepcopy(value)
-                agent_action['inform_slots'][self.match_key] = key
+                agent_action['inform_slots'][self.match_key] = str(key)
             else:
                 agent_action['inform_slots'][self.match_key] = 'no match available'
             self.current_informs[self.match_key] = agent_action['inform_slots'][self.match_key]

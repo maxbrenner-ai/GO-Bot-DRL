@@ -1,5 +1,5 @@
 import random, copy
-from dialogue_config import usersim_default_key, FAIL, NO_OUTCOME, SUCCESS, usersim_required_init_inform_keys
+from dialogue_config import usersim_default_key, FAIL, NO_OUTCOME, SUCCESS, usersim_required_init_inform_keys, no_query_keys
 import random
 
 '''
@@ -25,6 +25,7 @@ class UserSimulator:
         self.default_key = usersim_default_key
         # A list of REQUIRED to be in the first action inform keys
         self.init_informs = usersim_required_init_inform_keys
+        self.no_query = no_query_keys
 
         # TEMP ----
         self.database = database
@@ -93,7 +94,6 @@ class UserSimulator:
     def step(self, agent_action, round_num):
         # print('ROUND: {}'.format(round_num))
         # print('agent action: {}'.format(agent_action))
-
         # Assetions
         # No unk in agent action informs
         for value in agent_action['inform_slots'].values():
@@ -118,12 +118,16 @@ class UserSimulator:
             # print('Response:')
             agent_intent = agent_action['intent']
             if agent_intent == 'request':
+                # print('req')
                 self.response_to_request(agent_action)
-            if agent_intent == 'inform':
+            elif agent_intent == 'inform':
+                # print('inf')
                 self.response_to_inform(agent_action)
-            if agent_intent == 'match_found':
+            elif agent_intent == 'match_found':
+                # print('mf')
                 self.response_to_match_found(agent_action)
-            if agent_intent == 'done':
+            elif agent_intent == 'done':
+                # print('done')
                 succ = self.response_to_done()
                 self.state['intent'] = 'done'
                 self.state['request_slots'].clear()
@@ -151,7 +155,7 @@ class UserSimulator:
         for inf_key in self.goal['inform_slots']:
             assert self.state['history_slots'].get(inf_key, False) or self.state['rest_slots'].get(inf_key, False)
         for req_key in self.goal['request_slots']:
-            assert self.state['history_slots'].get(req_key, False) or self.state['rest_slots'].get(req_key, False)
+            assert self.state['history_slots'].get(req_key, False) or self.state['rest_slots'].get(req_key, False), req_key
         # Anything in the rest should be in the goal
         for key in self.state['rest_slots']:
             assert self.goal['inform_slots'].get(key, False) or self.goal['request_slots'].get(key, False)
@@ -294,7 +298,7 @@ class UserSimulator:
         # To:
         assert self.default_key in agent_informs
         self.state['rest_slots'].pop(self.default_key, None)
-        self.state['history_slots'][self.default_key] = agent_informs[self.default_key]
+        self.state['history_slots'][self.default_key] = str(agent_informs[self.default_key])
         self.state['request_slots'].pop(self.default_key, None)
         # ----------
 
@@ -302,17 +306,31 @@ class UserSimulator:
         if agent_informs[self.default_key] == 'no match available':
             self.constraint_check = FAIL
 
+        # print('agent: {}'.format(agent_informs))
+        # print('goal informs: {}'.format(self.goal['inform_slots']))
+
         # Check to see if all goal informs are in the agent informs, and that the values match
         for key, value in self.goal['inform_slots'].items():
             assert value != None
+            # For items that cannot be in the querys dont check to see if they are in the agent informs here
+            if key in self.no_query:
+                continue
             # Will return true if key not in agent informs OR if value does not match value of agent informs[key]
             if value != agent_informs.get(key, None):
                 self.constraint_check = FAIL
+                # print('FAIL')
                 break
 
         if self.constraint_check == FAIL:
             self.state['intent'] = 'reject'
             self.state['request_slots'].clear()
+
+        # if self.constraint_check == SUCCESS:
+        #     print('----------')
+        #     print('agent: {}'.format(agent_action))
+        #     print('goal: {}'.format(self.goal))
+        #     print('state: {}'.format(self.state))
+        #     print('comnstaint: {}'.format(self.constraint_check))
 
     def response_to_done(self):
         if self.constraint_check == FAIL:
@@ -327,16 +345,23 @@ class UserSimulator:
 
         assert self.state['history_slots'][self.default_key] != 'no match available'
 
-        match = copy.deepcopy(self.database[self.state['history_slots'][self.default_key]])
+        match = copy.deepcopy(self.database[int(self.state['history_slots'][self.default_key])])
 
         for key, value in self.goal['inform_slots'].items():
             assert value != None
+            if key in self.no_query:
+                continue
             # Will return true if key not in agent informs OR if value does not match value of agent informs[key]
             if value != match.get(key, None):
                 assert True is False, 'match: {}\ngoal: {}'.format(match, self.goal)
                 break
 
         # ----------
+
+        # print('---------------')
+        # print('goal: {}'.format(self.goal))
+        # print('state: {}'.format(self.state))
+        # print('ticket: {}'.format(match))
 
         return SUCCESS
 

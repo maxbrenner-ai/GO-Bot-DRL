@@ -54,11 +54,6 @@ class DBQuery:
                 slot_values[slot_value] += 1
         return slot_values
 
-    # Todo: I believe there is a bug in this because i filter out any cnstarint with the value fo anything but then
-    # i check to make sure that all constrants are in the database movie. .... check that the filter is correct to theirs
-    # AND check that my set math to see if the sizes match is okay.... cuz i think that if there are more slots in the movie
-    # then in the constraints that that shouldnt make it so it doesnt match
-    # TODO SOOOO the set math is wrong cuz ^^^
     def get_db_results(self, constraints):
         # Filter non-querible items such as numberofpoeple and ticket
         # Anything as well cuz we dont want to constrain results for a slot that the usersim doesnt care about
