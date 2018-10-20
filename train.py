@@ -52,10 +52,10 @@ def run_it(file_index):
     dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)
 
     csv_name = 'file_' + str(file_index)
-    file_path = 'data/dump/' + csv_name + '.csv'
+    file_path = 'data/final_before_nl/' + csv_name + '.csv'
 
     # Temp --- Make CSV file
-    with open(file_path, 'w') as csvfile:
+    with open(file_path, 'w'):
         pass
 
     # Warm-Up loop

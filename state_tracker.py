@@ -37,80 +37,76 @@ class StateTracker:
         ########################################################################
         #   Create one-hot of acts to represent the current user action
         ########################################################################
-        user_act_rep = np.zeros((1, self.num_intents))
-        user_act_rep[0, self.intents_dict[user_action['intent']]] = 1.0
+        user_act_rep = np.zeros((self.num_intents,))
+        user_act_rep[self.intents_dict[user_action['intent']]] = 1.0
 
         ########################################################################
         #     Create bag of inform slots representation to represent the current user action
         ########################################################################
-        user_inform_slots_rep = np.zeros((1, self.num_slots))
-        for slot in user_action['inform_slots'].keys():
-            user_inform_slots_rep[0, self.slots_dict[slot]] = 1.0
+        user_inform_slots_rep = np.zeros((self.num_slots,))
+        for key in user_action['inform_slots'].keys():
+            user_inform_slots_rep[self.slots_dict[key]] = 1.0
 
         ########################################################################
         #   Create bag of request slots representation to represent the current user action
         ########################################################################
-        user_request_slots_rep = np.zeros((1, self.num_slots))
-        for slot in user_action['request_slots'].keys():
-            user_request_slots_rep[0, self.slots_dict[slot]] = 1.0
+        user_request_slots_rep = np.zeros((self.num_slots,))
+        for key in user_action['request_slots'].keys():
+            user_request_slots_rep[self.slots_dict[key]] = 1.0
 
         ########################################################################
         #   Creat bag of filled_in slots based on the current_slots
         ########################################################################
-        current_slots_rep = np.zeros((1, self.num_slots))
-        for slot in self.current_informs:
-            current_slots_rep[0, self.slots_dict[slot]] = 1.0
+        current_slots_rep = np.zeros((self.num_slots,))
+        for key in self.current_informs:
+            current_slots_rep[self.slots_dict[key]] = 1.0
 
         ########################################################################
         #   Encode last agent act
         ########################################################################
-        agent_act_rep = np.zeros((1, self.num_intents))
+        agent_act_rep = np.zeros((self.num_intents,))
         if last_agent_action:
-            agent_act_rep[0, self.intents_dict[last_agent_action['intent']]] = 1.0
+            agent_act_rep[self.intents_dict[last_agent_action['intent']]] = 1.0
 
         ########################################################################
         #   Encode last agent inform slots
         ########################################################################
-        agent_inform_slots_rep = np.zeros((1, self.num_slots))
+        agent_inform_slots_rep = np.zeros((self.num_slots,))
         if last_agent_action:
-            for slot in last_agent_action['inform_slots'].keys():
-                agent_inform_slots_rep[0, self.slots_dict[slot]] = 1.0
+            for key in last_agent_action['inform_slots'].keys():
+                agent_inform_slots_rep[self.slots_dict[key]] = 1.0
 
         ########################################################################
         #   Encode last agent request slots
         ########################################################################
-        agent_request_slots_rep = np.zeros((1, self.num_slots))
+        agent_request_slots_rep = np.zeros((self.num_slots,))
         if last_agent_action:
-            for slot in last_agent_action['request_slots'].keys():
-                agent_request_slots_rep[0, self.slots_dict[slot]] = 1.0
+            for key in last_agent_action['request_slots'].keys():
+                agent_request_slots_rep[self.slots_dict[key]] = 1.0
 
-        turn_rep = np.zeros((1, 1)) + self.round_num / 10.
+        turn_rep = np.zeros((1,)) + self.round_num / 5.
 
         ########################################################################
         #  One-hot representation of the turn count?
         ########################################################################
-
-        # Todo: I'm interested to see if including this increases performance
-
-        turn_onehot_rep = np.zeros((1, self.max_round_num))
-        turn_onehot_rep[0, self.round_num - 1] = 1.0
+        turn_onehot_rep = np.zeros((self.max_round_num,))
+        turn_onehot_rep[self.round_num - 1] = 1.0
 
         ########################################################################
         #   Representation of KB results (scaled counts)
         ########################################################################
-        kb_count_rep = np.zeros((1, self.num_slots + 1)) + kb_results_dict['matching_all_constraints'] / 100.
-        for slot in kb_results_dict:
-            if slot in self.slots_dict:
-                kb_count_rep[0, self.slots_dict[slot]] = kb_results_dict[slot] / 100.
+        kb_count_rep = np.zeros((self.num_slots + 1,)) + kb_results_dict['matching_all_constraints'] / 100.
+        for key in kb_results_dict.keys():
+            if key in self.slots_dict:
+                kb_count_rep[self.slots_dict[key]] = kb_results_dict[key] / 100.
 
         ########################################################################
         #   Representation of KB results (binary)
         ########################################################################
-        kb_binary_rep = np.zeros((1, self.num_slots + 1)) + np.sum(
-            kb_results_dict['matching_all_constraints'] > 0.)
-        for slot in kb_results_dict:
-            if slot in self.slots_dict:
-                kb_binary_rep[0, self.slots_dict[slot]] = np.sum(kb_results_dict[slot] > 0.)
+        kb_binary_rep = np.zeros((self.num_slots + 1,)) + np.sum(kb_results_dict['matching_all_constraints'] > 0.)
+        for key in kb_results_dict.keys():
+            if key in self.slots_dict:
+                kb_binary_rep[self.slots_dict[key]] = np.sum(kb_results_dict[key] > 0.)
 
         # print('---------')
         # print(user_act_rep)
