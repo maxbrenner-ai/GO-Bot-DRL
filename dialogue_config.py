@@ -9,7 +9,7 @@
 # Usersim Config
 #######################################
 # Used in EMC for intent error
-usersim_intents = ['inform', 'request', 'thanks', 'reject']
+usersim_intents = ['inform', 'request', 'thanks', 'reject', 'done']
 
 # Used for the end goal of the usersim, eg ticket, it must be added to req slots of the usergoal
 usersim_default_key = 'ticket'

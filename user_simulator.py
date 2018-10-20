@@ -201,16 +201,31 @@ class UserSimulator:
         # informed, then request it with all available inform slots left for usersim to inform
         elif agent_request_key in self.goal['request_slots'] and agent_request_key in self.state['rest_slots']:
             # print('req 3')
+            # Todo: This was a qualitatve change, so see if it it matters when i converse with agent
+            # CHANGED FROm :::
+            # self.state['intent'] = 'request'
+            # self.state['request_slots'][agent_request_key] = 'UNK'
+            # for key in list(self.state['rest_slots'].keys()):
+            #     value = self.state['rest_slots'][key]
+            #     # Means it is an inform
+            #     if value != 'UNK':
+            #         self.state['inform_slots'][key] = value
+            #         self.state['rest_slots'].pop(key)
+            #         self.state['history_slots'][key] = value
+            # To:: Clear reqs and add a random inform
+            self.state['request_slots'].clear()
             self.state['intent'] = 'request'
             self.state['request_slots'][agent_request_key] = 'UNK'
-            # Todo: So i dont really like this, fuck around with it and see if there is a better option that still works
-            for key in list(self.state['rest_slots'].keys()):
-                value = self.state['rest_slots'][key]
-                # Means it is an inform
+            rest_informs = {}
+            for key, value in list(self.state['rest_slots'].items()):
                 if value != 'UNK':
-                    self.state['inform_slots'][key] = value
-                    self.state['rest_slots'].pop(key)
-                    self.state['history_slots'][key] = value
+                    rest_informs[key] = value
+            if rest_informs:
+                key_choice, value_choice = random.choice(list(rest_informs.items()))
+                self.state['inform_slots'][key_choice] = value_choice
+                self.state['rest_slots'].pop(key_choice)
+                self.state['history_slots'][key_choice] = value_choice
+
         # Fourth and Final Case: otherwise the usersim does not care about the slot being requested, then inform
         else:
             # print('req 4')
@@ -275,7 +290,6 @@ class UserSimulator:
             # - Otherwise respond with 'nothing to say' intent
             else:
                 # print('inf 2.3')
-                # TOdo: probably will change
                 # Note: This thanks will actually have no requests
                 self.state['intent'] = 'thanks'
 
@@ -284,8 +298,7 @@ class UserSimulator:
         # print('mf')
         agent_informs = agent_action['inform_slots']
 
-        # Todo: I will be changing this intent to 'accept' and clearing requests
-        # Todo: keep in mind for now 'thanks' can have requests
+        # Requests are allowed with this thanks
         self.state['intent'] = 'thanks'
         self.constraint_check = SUCCESS
 

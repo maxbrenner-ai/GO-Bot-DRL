@@ -30,7 +30,7 @@ CSV file of format: N is num of input CSVs (Just stacking and then dividing)
 import csv
 import numpy as np
 
-directory_path = 'data/case_3_response_to_done/'
+directory_path = 'data/third_case_response_to_request/'
 num_inputs = 10
 input_file_paths = []
 
