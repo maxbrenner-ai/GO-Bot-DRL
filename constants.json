@@ -1,18 +1,19 @@
 {
-  "file_paths": {
+  "db_file_paths": {
     "database": "data/movie_db.pkl",
     "dict": "data/movie_dict.pkl",
     "user_goals": "data/movie_user_goals.pkl"
   },
   "run": {
     "warmup_mem": 1000,
-    "num_ep_train": 25000,
+    "num_ep_run": 25000,
     "train_freq": 100,
-    "num_ep_test": 10,
     "max_round_num": 20,
     "success_rate_threshold": 0.3
   },
   "agent": {
+    "save_weights_file_path": "weights/model.h5",
+    "load_weights_file_path": "weights/model.h5",
     "vanilla": true,
     "learning_rate": 1e-3,
     "batch_size": 16,

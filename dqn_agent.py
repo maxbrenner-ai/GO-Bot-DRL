@@ -5,6 +5,7 @@ from keras.regularizers import l2, l1
 import random, copy
 import numpy as np
 from dialogue_config import rule_requests, agent_actions
+import re
 
 
 # Some of code based off of https://jaromiru.com/2016/09/27/lets-make-a-dqn-theory/
@@ -27,6 +28,9 @@ class DQNAgent:
         self.l1_reg_constant = self.C['l1_reg_constant']
         self.grad_clip_constant = self.C['grad_clip_constant']
 
+        self.load_weights_file_path = self.C['load_weights_file_path']
+        self.save_weights_file_path = self.C['save_weights_file_path']
+
         if self.max_memory_size < self.batch_size:
             raise ValueError('Max memory size must be at least as great as batch size!')
 
@@ -36,6 +40,8 @@ class DQNAgent:
 
         self.beh_model = self._build_model()
         self.tar_model = self._build_model()
+
+        self._load_weights()
 
         self.reset()
 
@@ -155,3 +161,19 @@ class DQNAgent:
 
     def copy(self):
         self.tar_model.set_weights(self.beh_model.get_weights())
+
+    def save_weights(self):
+        if not self.save_weights_file_path:
+            return
+        beh_save_file_path = re.sub(r'\.h5', r'_beh.h5', self.save_weights_file_path)
+        self.beh_model.save_weights(beh_save_file_path)
+        tar_save_file_path = re.sub(r'\.h5', r'_tar.h5', self.save_weights_file_path)
+        self.tar_model.save_weights(tar_save_file_path)
+
+    def _load_weights(self):
+        if not self.load_weights_file_path:
+            return
+        beh_load_file_path = re.sub(r'\.h5', r'_beh.h5', self.load_weights_file_path)
+        self.beh_model.load_weights(beh_load_file_path)
+        tar_load_file_path = re.sub(r'\.h5', r'_tar.h5', self.load_weights_file_path)
+        self.tar_model.load_weights(tar_load_file_path)
