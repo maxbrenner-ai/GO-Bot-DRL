@@ -2,20 +2,6 @@ import random, copy
 from dialogue_config import usersim_default_key, FAIL, NO_OUTCOME, SUCCESS, usersim_required_init_inform_keys, no_query_keys
 import random
 
-'''
-
-New Plan: match_found intent replaces all informs with the ticket its selected informs! Not with all the current informs.
-Also it fills the match slot with the ID of the match from the DB! Instead of just value match or no value match.
-In response to match found the usersim replies thanks (or accept) if all of the informs of goal (exlcuding any non-query 
-slots such as nop) and the values match. And reject otherwise. All response to done does is check to make sure the 
-constraint check is good (from match found response) and the stacks are empty. IMPORTANT: To avoid the agent making
-a match found and then mucking up the match by informing match (in a normal inform) that no longer works: make it so
-that match can only be informed by match found intent and not as a normal inform
-
-Also I will be getting rid of 'thanks' probably
-
-'''
-
 
 class UserSimulator:
     def __init__(self, goal_list, constants, database):
@@ -119,16 +105,16 @@ class UserSimulator:
             agent_intent = agent_action['intent']
             if agent_intent == 'request':
                 # print('req')
-                self.response_to_request(agent_action)
+                self._response_to_request(agent_action)
             elif agent_intent == 'inform':
                 # print('inf')
-                self.response_to_inform(agent_action)
+                self._response_to_inform(agent_action)
             elif agent_intent == 'match_found':
                 # print('mf')
-                self.response_to_match_found(agent_action)
+                self._response_to_match_found(agent_action)
             elif agent_intent == 'done':
                 # print('done')
-                succ = self.response_to_done()
+                succ = self._response_to_done()
                 self.state['intent'] = 'done'
                 self.state['request_slots'].clear()
                 done = True
@@ -179,7 +165,7 @@ class UserSimulator:
             reward += 2*self.max_round
         return reward
 
-    def response_to_request(self, agent_action):
+    def _response_to_request(self, agent_action):
         agent_request_key = list(agent_action['request_slots'].keys())[0]
         # First Case: if agent requests for something that is in the usersims goal inform slots, then inform it
         if agent_request_key in self.goal['inform_slots']:
@@ -234,7 +220,7 @@ class UserSimulator:
             self.state['request_slots'].clear()
             self.state['history_slots'][agent_request_key] = 'anything'
 
-    def response_to_inform(self, agent_action):
+    def _response_to_inform(self, agent_action):
         agent_inform_key = list(agent_action['inform_slots'].keys())[0]
         agent_inform_value = agent_action['inform_slots'][agent_inform_key]
 
@@ -294,7 +280,7 @@ class UserSimulator:
                 self.state['intent'] = 'thanks'
 
     # All ST informs will be sent in with this agent action
-    def response_to_match_found(self, agent_action):
+    def _response_to_match_found(self, agent_action):
         # print('mf')
         agent_informs = agent_action['inform_slots']
 
@@ -345,7 +331,7 @@ class UserSimulator:
         #     print('state: {}'.format(self.state))
         #     print('comnstaint: {}'.format(self.constraint_check))
 
-    def response_to_done(self):
+    def _response_to_done(self):
         if self.constraint_check == FAIL:
             return FAIL
 

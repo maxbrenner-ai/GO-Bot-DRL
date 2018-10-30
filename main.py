@@ -1,6 +1,6 @@
 '''
 
-- Setup way to chat to bot (in frames)
+- TEST AND DEBUG USER
 - Gather final data
     - In even more detail, and longer trains
 - Clean code

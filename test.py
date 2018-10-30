@@ -6,6 +6,7 @@ from state_tracker import StateTracker
 import pickle, csv
 import json
 import math
+import user
 
 
 # Load Constants Json into Dict
@@ -21,6 +22,7 @@ USER_GOALS_FILE_PATH = file_path_dict['user_goals']
 
 # Load Run Constants
 run_dict = constants['run']
+USE_USERSIM = constants['usersim']
 NUM_EP_TEST = run_dict['num_ep_run']
 MAX_ROUND_NUM = run_dict['max_round_num']
 
@@ -40,7 +42,10 @@ db_dict = pickle.load(open(DICT_FILE_PATH, 'rb'), encoding='latin1')
 user_goals = pickle.load(open(USER_GOALS_FILE_PATH, 'rb'), encoding='latin1')
 
 # Init. Objects
-user_sim = UserSimulator(user_goals, constants, database)
+if USE_USERSIM:
+    user = UserSimulator(user_goals, constants, database)
+else:
+    user = User()
 emc_0 = EMC(db_dict, constants)
 state_tracker = StateTracker(database, constants)
 dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)

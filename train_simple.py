@@ -21,6 +21,7 @@ USER_GOALS_FILE_PATH = file_path_dict['user_goals']
 
 # Load Run Constants
 run_dict = constants['run']
+USE_USERSIM = constants['usersim']
 WARMUP_MEM = run_dict['warmup_mem']
 NUM_EP_TRAIN = run_dict['num_ep_run']
 TRAIN_FREQ = run_dict['train_freq']
