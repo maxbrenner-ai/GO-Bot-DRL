@@ -1,6 +1,6 @@
 '''
 
-- TEST AND DEBUG USER
+- DEBUG USER
 - Gather final data
     - In even more detail, and longer trains
 - Clean code

@@ -5,7 +5,7 @@
     "user_goals": "data/movie_user_goals.pkl"
   },
   "run": {
-    "usersim": true,
+    "usersim": false,
     "warmup_mem": 1000,
     "num_ep_run": 25000,
     "train_freq": 100,

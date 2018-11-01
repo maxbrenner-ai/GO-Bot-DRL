@@ -6,7 +6,7 @@ from state_tracker import StateTracker
 import pickle, csv
 import json
 import math
-import user
+from user import User
 
 
 # Load Constants Json into Dict
@@ -22,7 +22,7 @@ USER_GOALS_FILE_PATH = file_path_dict['user_goals']
 
 # Load Run Constants
 run_dict = constants['run']
-USE_USERSIM = constants['usersim']
+USE_USERSIM = run_dict['usersim']
 NUM_EP_TEST = run_dict['num_ep_run']
 MAX_ROUND_NUM = run_dict['max_round_num']
 
@@ -45,7 +45,7 @@ user_goals = pickle.load(open(USER_GOALS_FILE_PATH, 'rb'), encoding='latin1')
 if USE_USERSIM:
     user = UserSimulator(user_goals, constants, database)
 else:
-    user = User()
+    user = User(constants)
 emc_0 = EMC(db_dict, constants)
 state_tracker = StateTracker(database, constants)
 dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)
@@ -68,7 +68,7 @@ def test_run():
             # Update state tracker with the agent's action
             round_num = state_tracker.update_state_agent(agent_action)
             # User sim. takes action given agent action
-            user_action, reward, done, succ = user_sim.step(agent_action, round_num)
+            user_action, reward, done, succ = user.step(agent_action, round_num)
             ep_reward += reward
             if not done:
                 # Infuse error into semantic frame level user sim. action
@@ -84,7 +84,7 @@ def ep_reset():
     # First reset the state tracker
     state_tracker.reset()
     # Then pick an init user action
-    user_action = user_sim.reset()
+    user_action = user.reset()
     # Infuse with error
     user_error_action = emc_0.infuse_error(user_action)
     # And update state tracker
