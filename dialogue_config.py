@@ -1,20 +1,19 @@
-# Special slot values (Not for use, just reference)
+# Special slot values (for reference)
 'PLACEHOLDER'  # For informs
 'UNK'  # For requests
-'anything'  # = to I DO NOT CARE, means any value works for the slot with this value
-'match available'  # For when the agent intent to inform a match is found, and the ST does find at least one
-'no match available'  # Used for same above and Used for inform slots needed to be filled by db_helper but there was no match with the current informs
+'anything'  # means any value works for the slot with this value
+'no match available'  # When the intent of the agent is match_found yet no db match fits current constraints
 
 #######################################
 # Usersim Config
 #######################################
-# Used in EMC for intent error
+# Used in EMC for intent error (and in user)
 usersim_intents = ['inform', 'request', 'thanks', 'reject', 'done']
 
-# Used for the end goal of the usersim, eg ticket, it must be added to req slots of the usergoal
+# The goal of the agent is to inform a match for this key
 usersim_default_key = 'ticket'
 
-# Required to be in the first action in inform slots of the usersim if they exist in goal inform slots
+# Required to be in the first action in inform slots of the usersim if they exist in the goal inform slots
 usersim_required_init_inform_keys = ['moviename']
 
 #######################################
@@ -55,7 +54,6 @@ SUCCESS = 1
 
 
 # All possible intents (for one-hot conversion in ST.get_state())
-# done for agent if it is closing, or usersim if round num past max round num
 all_intents = ['inform', 'request', 'done', 'match_found', 'thanks', 'reject']
 
 # All possible slots (for one-hot conversion in ST.get_state())

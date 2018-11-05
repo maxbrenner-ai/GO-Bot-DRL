@@ -85,7 +85,7 @@ class UserSimulator:
         for value in agent_action['inform_slots'].values():
             assert value != 'UNK'
             assert value != 'PLACEHOLDER'
-        # No PLACHEOLDERin agent at all
+        # No PLACHEOLDER in agent at all
         for value in agent_action['request_slots'].values():
             assert value != 'PLACEHOLDER'
 
