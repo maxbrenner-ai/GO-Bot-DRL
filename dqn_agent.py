@@ -1,32 +1,27 @@
 from keras.models import Sequential
 from keras.layers import Dense
-from keras.optimizers import Adam, RMSprop
-from keras.regularizers import l2, l1
+from keras.optimizers import Adam
 import random, copy
 import numpy as np
 from dialogue_config import rule_requests, agent_actions
 import re
 
 
-# Some of code based off of https://jaromiru.com/2016/09/27/lets-make-a-dqn-theory/
+# Some of the code based off of https://jaromiru.com/2016/09/27/lets-make-a-dqn-theory/
 
-# Note: They do not anneal epsilon
+# Note: In original paper's code the epsilon is not annealed and it is not implemented in this code either
 class DQNAgent:
     def __init__(self, state_size, constants):
         self.C = constants['agent']
         self.memory = []
         self.memory_index = 0
         self.max_memory_size = self.C['max_mem_size']
-        self.eps = self.C['epsilon_init']  # Note they do not anneal eps, and default is 0, so i should test this out
+        self.eps = self.C['epsilon_init']
         self.vanilla = self.C['vanilla']
         self.lr = self.C['learning_rate']
         self.gamma = self.C['gamma']
         self.batch_size = self.C['batch_size']
         self.hidden_size = self.C['dqn_hidden_size']
-        self.decay_rate = self.C['decay_rate']
-        self.smooth_epsilon = self.C['smooth_eps']
-        self.l1_reg_constant = self.C['l1_reg_constant']
-        self.grad_clip_constant = self.C['grad_clip_constant']
 
         self.load_weights_file_path = self.C['load_weights_file_path']
         self.save_weights_file_path = self.C['save_weights_file_path']
@@ -36,7 +31,9 @@ class DQNAgent:
 
         self.state_size = state_size
         self.possible_actions = agent_actions
-        self.num_actions = len(self.possible_actions)  # 40
+        self.num_actions = len(self.possible_actions)
+
+        self.rule_request_set = rule_requests
 
         self.beh_model = self._build_model()
         self.tar_model = self._build_model()
@@ -47,9 +44,6 @@ class DQNAgent:
 
     def _build_model(self):
         model = Sequential()
-        # model.add(Dense(self.hidden_size, input_dim=self.state_size, activation='relu', kernel_regularizer=l1(self.l1_reg_constant)))
-        # model.add(Dense(self.num_actions, activation='linear', kernel_regularizer=l1(self.l1_reg_constant)))
-        # model.compile(loss='mse', optimizer=RMSprop(lr=self.lr, decay=self.decay_rate, epsilon=self.smooth_epsilon, clipvalue=self.grad_clip_constant))
         model.add(Dense(self.hidden_size, input_dim=self.state_size, activation='relu'))
         model.add(Dense(self.num_actions, activation='linear'))
         model.compile(loss='mse', optimizer=Adam(lr=self.lr))
@@ -58,7 +52,6 @@ class DQNAgent:
     def reset(self):
         self.rule_current_slot_index = 0
         self.rule_phase = 'not done'
-        self.rule_request_set = rule_requests
 
     def get_action(self, state, use_rule=False):
         if self.eps > random.random():
@@ -82,7 +75,7 @@ class DQNAgent:
         elif self.rule_phase == 'done':
             rule_response = {'intent': 'done', 'inform_slots': {}, 'request_slots': {}}
         else:
-            assert True is False
+            raise Exception('Should not have reached this clause')
 
         index = self._map_action_to_index(rule_response)
         return index, rule_response
@@ -91,17 +84,18 @@ class DQNAgent:
         for (i, action) in enumerate(self.possible_actions):
             if response == action:
                 return i
+        raise ValueError('Response: {} not found in possible actions'.format(response))
 
     def _dqn_action(self, state):
         index = np.argmax(self._dqn_predict_one(state))
         action = self._map_index_to_action(index)
         return index, action
 
-    # Map index to action
     def _map_index_to_action(self, index):
         for (i, action) in enumerate(self.possible_actions):
             if index == i:
                 return copy.deepcopy(action)
+        raise ValueError('Index: {} not in range of possible actions'.format(index))
 
     def _dqn_predict_one(self, state, target=False):
         return self._dqn_predict(state.reshape(1, self.state_size), target=target).flatten()
@@ -125,9 +119,8 @@ class DQNAgent:
     def is_memory_full(self):
         return len(self.memory) == self.max_memory_size
 
-    # States, actions, rewards, next_states, done
     def train(self):
-        # Calc num of batches to run
+        # Calc. num of batches to run
         num_batches = len(self.memory) // self.batch_size
         for b in range(num_batches):
             batch = random.sample(self.memory, self.batch_size)
@@ -156,7 +149,7 @@ class DQNAgent:
                 inputs[i] = s
                 targets[i] = t
 
-            # Note: Have to train as you go (cuz of how zeroing the targets work)
+            # Note: Have to train as you go
             self.beh_model.fit(inputs, targets, epochs=1, verbose=0)
 
     def copy(self):

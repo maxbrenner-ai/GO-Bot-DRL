@@ -1,5 +1,4 @@
-from dialogue_config import FAIL, NO_OUTCOME, SUCCESS, usersim_intents, all_slots
-import re
+from dialogue_config import FAIL, SUCCESS, usersim_intents, all_slots
 
 
 class User:
@@ -57,12 +56,12 @@ class User:
         return succ
 
     def step(self, agent_action, round_num):
-        # Assetions
+        # Assertions
         # No unk in agent action informs
         for value in agent_action['inform_slots'].values():
             assert value != 'UNK'
             assert value != 'PLACEHOLDER'
-        # No PLACHEOLDERin agent at all
+        # No PLACEHOLDER in agent_action at all
         for value in agent_action['request_slots'].values():
             assert value != 'PLACEHOLDER'
 
