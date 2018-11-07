@@ -4,6 +4,8 @@ import random, copy
 
 
 class UserSimulator:
+    """Simulates a real user, to train the agent with reinforcement learning."""
+
     def __init__(self, goal_list, constants, database):
         """
         The constructor for UserSimulator. Sets dialogue config variables.

@@ -3,6 +3,8 @@ from dialogue_config import usersim_intents
 
 
 class ErrorModelController:
+    """Adds error to the user action."""
+
     def __init__(self, db_dict, constants):
         """
         The constructor for ErrorModelController.

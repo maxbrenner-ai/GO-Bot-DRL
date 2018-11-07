@@ -12,6 +12,8 @@ import re
 
 
 class DQNAgent:
+    """The DQN agent that interacts with the user."""
+
     def __init__(self, state_size, constants):
         """
         The constructor of DQNAgent.

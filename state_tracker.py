@@ -6,6 +6,8 @@ import copy
 
 
 class StateTracker:
+    """Tracks the state of the episode/conversation and prepares the state representation for the agent."""
+
     def __init__(self, database, constants):
         """
         The constructor of StateTracker.

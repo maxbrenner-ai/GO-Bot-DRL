@@ -4,6 +4,8 @@ import copy
 
 
 class DBQuery:
+    """Queries the database for the state tracker."""
+
     def __init__(self, database):
         """
         The constructor for DBQuery.

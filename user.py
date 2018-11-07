@@ -3,6 +3,8 @@ from utils import reward_function
 
 
 class User:
+    """Connects a real user to the conversation through the console."""
+
     def __init__(self, constants):
         """
         The constructor for User.
