@@ -7,6 +7,18 @@ import copy
 
 class StateTracker:
     def __init__(self, database, constants):
+        """
+        The constructor of StateTracker.
+
+        The constructor of StateTracker which creates a DB query object, creates necessary state rep. dicts, etc. and
+        calls reset.
+
+        Parameters:
+            database (dict): The database with format dict(long: dict)
+            constants (dict): Loaded constants in dict
+
+        """
+
         self.db_helper = DBQuery(database)
         self.match_key = usersim_default_key
         self.intents_dict = convert_list_to_dict(all_intents)
@@ -18,15 +30,33 @@ class StateTracker:
         self.reset()
 
     def get_state_size(self):
+        """Returns the state size of the state representation used by the agent."""
+
         return 2 * self.num_intents + 7 * self.num_slots + 3 + self.max_round_num
 
     def reset(self):
+        """Resets current_informs, history and round_num."""
+
         self.current_informs = {}
         # A list of the dialogues (dicts) by the agent and user so far in the conversation
         self.history = []
         self.round_num = 1
 
     def get_state(self, done=False):
+        """
+        Returns the state representation as a numpy array which is fed into the agent's neural network.
+
+        The state representation contains useful information for the agent about the current state of the conversation.
+        Processes by the agent to be fed into the neural network. Ripe for experimentation and optimization.
+
+        Parameters:
+            done (bool): Indicates whether this is the last dialogue in the episode/conversation. Default: False
+
+        Returns:
+            numpy.array: A numpy array of shape (state size,)
+
+        """
+
         # If done then fill state with zeros
         if done:
             return self.none_state
@@ -93,9 +123,26 @@ class StateTracker:
         state_representation = np.hstack(
             [user_act_rep, user_inform_slots_rep, user_request_slots_rep, agent_act_rep, agent_inform_slots_rep,
              agent_request_slots_rep, current_slots_rep, turn_rep, turn_onehot_rep, kb_binary_rep, kb_count_rep]).flatten()
+
         return state_representation
 
     def update_state_agent(self, agent_action):
+        """
+        Updates the dialogue history with the agent's action and augments the agent's action.
+
+        Takes an agent action and updates the history. Also augments the agent_action param with query information and
+        any other necessary information.
+
+        Parameters:
+            agent_action (dict): The agent action of format dict('intent': string, 'inform_slots': dict,
+                                 'request_slots': dict) and changed to dict('intent': '', 'inform_slots': {},
+                                 'request_slots': {}, 'round': int, 'speaker': 'Agent')
+
+        Returns:
+            int: The current round_num
+
+        """
+
         if agent_action['intent'] == 'inform':
             assert agent_action['inform_slots']
             inform_slots = self.db_helper.fill_inform_slot(agent_action['inform_slots'], self.current_informs)
@@ -123,6 +170,18 @@ class StateTracker:
         return self.round_num
 
     def update_state_user(self, user_action):
+        """
+        Updates the dialogue history with the user's action and augments the user's action.
+
+        Takes a user action and updates the history. Also augments the user_action param with necessary information.
+
+        Parameters:
+            user_action (dict): The user action of format dict('intent': string, 'inform_slots': dict,
+                                 'request_slots': dict) and changed to dict('intent': '', 'inform_slots': {},
+                                 'request_slots': {}, 'round': int, 'speaker': 'User')
+
+        """
+
         for key, value in user_action['inform_slots'].items():
             self.current_informs[key] = value
         user_action.update({'round': self.round_num, 'speaker': 'User'})

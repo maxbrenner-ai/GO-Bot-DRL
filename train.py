@@ -47,14 +47,21 @@ state_tracker = StateTracker(database, constants)
 dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)
 
 
-# Warmup loop
 def warmup_run():
+    """
+    Runs the warmup stage of training which is used to fill the agents memory.
+
+    The agent uses it's rule-based policy to make actions. The agent's memory is filled as this runs.
+    Loop terminates when the size of the memory is equal to WARMUP_MEM or when the memory buffer is full.
+
+    """
+
     print('Warmup Started...')
     ep = 0
     total_step = 0
     done_warmup = False
     while not done_warmup:
-        ep_reset()
+        episode_reset()
         ep += 1
         ep_step = 0
         ep_reward = 0
@@ -87,27 +94,34 @@ def warmup_run():
     print('...Warmup Ended')
 
 
-# Training Loop
 def train_run():
+    """
+    Runs the loop that trains the agent.
+
+    Trains the agent on the goal-oriented chatbot task. Training of the agent's neural network occurs every episode that
+    TRAIN_FREQ is a multiple of. Terminates when the episode reaches NUM_EP_TRAIN.
+
+    """
+
     print('Training Started...')
-    ep = 0
+    episode = 0
     period_rew_total = 0
     period_min_reward = math.inf
     period_max_reward = -math.inf
     period_success_total = 0
     success_rate_best = 0.0
-    while ep < NUM_EP_TRAIN:
-        ep_reset()
+    while episode < NUM_EP_TRAIN:
+        episode_reset()
         # Inner loop (by conversation)
-        ep += 1
-        ep_reward = 0
+        episode += 1
+        episode_reward = 0
         done = False
         while not done:
             state = state_tracker.get_state()
             agent_action_index, agent_action = dqn_agent.get_action(state)
             round_num = state_tracker.update_state_agent(agent_action)
             user_action, reward, done, success = user_sim.step(agent_action, round_num)
-            ep_reward += reward
+            episode_reward += reward
             period_rew_total += reward
             if not done:
                 emc.infuse_error(user_action)
@@ -115,13 +129,13 @@ def train_run():
             next_state = state_tracker.get_state(done)
             dqn_agent.add_experience(state, agent_action_index, reward, next_state, done)
 
-        period_min_reward = min(period_min_reward, ep_reward)
-        period_max_reward = max(period_max_reward, ep_reward)
+        period_min_reward = min(period_min_reward, episode_reward)
+        period_max_reward = max(period_max_reward, episode_reward)
 
         if success:
             period_success_total += 1
 
-        if ep % TRAIN_FREQ == 0:
+        if episode % TRAIN_FREQ == 0:
             # Check success rate
             success_rate = period_success_total / TRAIN_FREQ
             avg_reward = period_rew_total / TRAIN_FREQ
@@ -130,7 +144,8 @@ def train_run():
                 dqn_agent.empty_memory()
             # Update current best success rate
             if success_rate > success_rate_best:
-                print('Episode: {} NEW BEST SUCCESS RATE: {} Avg Reward: {} Min Rew: {} Max Rew: {}'.format(ep, success_rate, avg_reward, period_min_reward, period_max_reward))
+                print('Episode: {} NEW BEST SUCCESS RATE: {} Avg Reward: {} Min Rew: {} Max Rew: {}'
+                      .format(episode, success_rate, avg_reward, period_min_reward, period_max_reward))
                 success_rate_best = success_rate
                 dqn_agent.save_weights()
             period_success_total = 0
@@ -144,8 +159,14 @@ def train_run():
     print('...Training Ended')
 
 
-# User takes first action
-def ep_reset():
+def episode_reset():
+    """
+    Resets the episode/conversation in the warmup and training loops.
+
+    Called in warmup and train to reset the state tracker, user and agent. Also get's the initial user action.
+
+    """
+
     # First reset the state tracker
     state_tracker.reset()
     # Then pick an init user action
@@ -158,10 +179,6 @@ def ep_reset():
     dqn_agent.reset()
 
 
-def main():
+if __name__ == "__main__":
     warmup_run()
     train_run()
-
-
-if __name__ == "__main__":
-    main()

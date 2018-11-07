@@ -48,11 +48,19 @@ dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)
 
 
 def test_run():
+    """
+    Runs the loop that tests the agent.
+
+    Tests the agent on the goal-oriented chatbot task. Only for evaluating a trained agent. Terminates when the episode
+    reaches NUM_EP_TEST.
+
+    """
+
     print('Testing Started...')
-    ep = 0
-    while ep < NUM_EP_TEST:
-        ep_reset()
-        ep += 1
+    episode = 0
+    while episode < NUM_EP_TEST:
+        episode_reset()
+        episode += 1
         ep_reward = 0
         done = False
         while not done:
@@ -70,12 +78,13 @@ def test_run():
                 emc.infuse_error(user_action)
             # Update state tracker with user action
             state_tracker.update_state_user(user_action)
-        print('Episode: {} Success: {} Reward: {}'.format(ep, success, ep_reward))
+        print('Episode: {} Success: {} Reward: {}'.format(episode, success, ep_reward))
     print('...Testing Ended')
 
 
-# User takes first action
-def ep_reset():
+def episode_reset():
+    """Resets the episode/conversation in the testing loop."""
+
     # First reset the state tracker
     state_tracker.reset()
     # Then pick an init user action
@@ -88,9 +97,5 @@ def ep_reset():
     dqn_agent.reset()
 
 
-def main():
-    test_run()
-
-
 if __name__ == "__main__":
-    main()
+    test_run()

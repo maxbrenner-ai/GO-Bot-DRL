@@ -1,10 +1,19 @@
 from dialogue_config import usersim_default_key, FAIL, NO_OUTCOME, SUCCESS, usersim_required_init_inform_keys, no_query_keys
-import random
-import copy
+from utils import reward_function
+import random, copy
 
 
 class UserSimulator:
     def __init__(self, goal_list, constants, database):
+        """
+        The constructor for UserSimulator. Sets dialogue config variables.
+
+        Parameters:
+            goal_list (list): User goals loaded from file
+            constants (dict): Dict of constants loaded from file
+            database (dict): The database in the format dict(long: dict)
+        """
+
         self.goal_list = goal_list
         self.max_round = constants['run']['max_round_num']
         self.default_key = usersim_default_key
@@ -17,6 +26,13 @@ class UserSimulator:
         # ---------
 
     def reset(self):
+        """
+        Resets the user sim. by emptying the state and returning the initial action.
+
+        Returns:
+            dict: The initial action of an episode
+        """
+
         self.goal = random.choice(self.goal_list)
         # Add default slot to requests of goal
         self.goal['request_slots'][self.default_key] = 'UNK'
@@ -38,6 +54,15 @@ class UserSimulator:
         return self._return_init_action()
 
     def _return_init_action(self):
+        """
+        Returns the initial action of the episode.
+
+        The initial action has an intent of request, required init. inform slots and a single request slot.
+
+        Returns:
+            dict: Initial user response
+        """
+
         # Always request
         self.state['intent'] = 'request'
 
@@ -72,7 +97,24 @@ class UserSimulator:
         return user_response
 
     def step(self, agent_action, round_num):
-        # Assertions
+        """
+        Return the response of the user sim. to the agent by using rules that simulate a user.
+
+        Given the agent action craft a response by using deterministic rules that simulate (to some extent) a user.
+        Some parts of the rules are stochastic. Check if the agent has succeeded or lost or still going.
+
+        Parameters:
+            agent_action (dict): The agent action that the user sim. responds to
+            round_num (int): The current round
+
+        Returns:
+            dict: User sim. response
+            int: Reward
+            bool: Done flag
+            int: Success: -1, 0 or 1 for loss, neither win nor loss, win
+        """
+
+        # Assertions -----
         # No UNK in agent action informs
         for value in agent_action['inform_slots'].values():
             assert value != 'UNK'
@@ -80,6 +122,7 @@ class UserSimulator:
         # No PLACEHOLDER in agent at all
         for value in agent_action['request_slots'].values():
             assert value != 'PLACEHOLDER'
+        # ----------------
 
         self.state['inform_slots'].clear()
         self.state['intent'] = ''
@@ -137,19 +180,21 @@ class UserSimulator:
         user_response['request_slots'] = copy.deepcopy(self.state['request_slots'])
         user_response['inform_slots'] = copy.deepcopy(self.state['inform_slots'])
 
-        reward = self._reward_function(success)
+        reward = reward_function(success, self.max_round)
 
         return user_response, reward, done, True if success is 1 else False
 
-    def _reward_function(self, succ):
-        reward = -1
-        if succ == FAIL:
-            reward += -self.max_round
-        elif succ == SUCCESS:
-            reward += 2*self.max_round
-        return reward
-
     def _response_to_request(self, agent_action):
+        """
+        Augments the state in response to the agent action having an intent of request.
+
+        There are 4 main cases for responding.
+
+        Parameters:
+            agent_action (dict): Intent of request with standard action format (including 'speaker': 'Agent' and
+                                 'round_num': int)
+        """
+
         agent_request_key = list(agent_action['request_slots'].keys())[0]
         # First Case: if agent requests for something that is in the user sims goal inform slots, then inform it
         if agent_request_key in self.goal['inform_slots']:
@@ -189,6 +234,17 @@ class UserSimulator:
             self.state['history_slots'][agent_request_key] = 'anything'
 
     def _response_to_inform(self, agent_action):
+        """
+        Augments the state in response to the agent action having an intent of inform.
+
+        There are 2 main cases for responding. Add the agent inform slots to history slots,
+        and remove the agent inform slots from the rest and request slots.
+
+        Parameters:
+            agent_action (dict): Intent of inform with standard action format (including 'speaker': 'Agent' and
+                                 'round_num': int)
+        """
+
         agent_inform_key = list(agent_action['inform_slots'].keys())[0]
         agent_inform_value = agent_action['inform_slots'][agent_inform_key]
 
@@ -236,6 +292,16 @@ class UserSimulator:
                 self.state['intent'] = 'thanks'
 
     def _response_to_match_found(self, agent_action):
+        """
+        Augments the state in response to the agent action having an intent of match_found.
+
+        Check if there is a match in the agent action that works with the current goal.
+
+        Parameters:
+            agent_action (dict): Intent of match_found with standard action format (including 'speaker': 'Agent' and
+                                 'round_num': int)
+        """
+
         agent_informs = agent_action['inform_slots']
 
         self.state['intent'] = 'thanks'
@@ -265,6 +331,16 @@ class UserSimulator:
             self.state['request_slots'].clear()
 
     def _response_to_done(self):
+        """
+        Augments the state in response to the agent action having an intent of done.
+
+        If the constraint_check is SUCCESS and both the rest and request slots of the state are empty for the agent
+        to succeed in this episode/conversation.
+
+        Returns:
+            int: Success: -1, 0 or 1 for loss, neither win nor loss, win
+        """
+
         if self.constraint_check == FAIL:
             return FAIL
 

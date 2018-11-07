@@ -5,6 +5,13 @@ import copy
 
 class DBQuery:
     def __init__(self, database):
+        """
+        The constructor for DBQuery.
+
+        Parameters:
+            database (dict): The database in the format dict(long: dict)
+        """
+
         self.database = database
         # {frozenset: {string: int}} A dict of dicts
         self.cached_db_slot = defaultdict(dict)
@@ -14,6 +21,20 @@ class DBQuery:
         self.match_key = usersim_default_key
 
     def fill_inform_slot(self, inform_slot_to_fill, current_inform_slots):
+        """
+        Given the current informs/constraints fill the informs that need to be filled with values from the database.
+
+        Searches through the database to fill the inform slots with PLACEHOLDER with values that work given the current
+        constraints of the current episode.
+
+        Parameters:
+            inform_slot_to_fill (dict): Inform slots to fill with values
+            current_inform_slots (dict): Current inform slots with values from the StateTracker
+
+        Returns:
+            dict: inform_slot_to_fill filled with values
+        """
+
         # For this simple system only one inform slot should ever passed in
         assert len(inform_slot_to_fill) == 1
 
@@ -38,6 +59,17 @@ class DBQuery:
         return filled_inform
 
     def _count_slot_values(self, key, db_subdict):
+        """
+        Return a dict of the different values and occurrences of each, given a key, from a sub-dict of database
+
+        Parameters:
+            key (string): The key to be counted
+            db_subdict (dict): A sub-dict of the database
+
+        Returns:
+            dict: The values and their occurrences given the key
+        """
+
         slot_values = defaultdict(int)  # init to 0
         for id in db_subdict.keys():
             current_option_dict = db_subdict[id]
@@ -47,9 +79,23 @@ class DBQuery:
                 # This will add 1 to 0 if this is the first time this value has been encountered, or it will add 1
                 # to whatever was already in there
                 slot_values[slot_value] += 1
+        print(slot_values)
         return slot_values
 
     def get_db_results(self, constraints):
+        """
+        Get all items in the database that fit the current constraints.
+
+        Looks at each item in the database and if its slots contain all constraints and their values match then the item
+        is added to the return dict.
+
+        Parameters:
+            constraints (dict): The current informs
+
+        Returns:
+            dict: The available items in the database
+        """
+
         # Filter non-queryable items and keys with the value 'anything' since those are inconsequential to the constraints
         new_constraints = {k: v for k, v in constraints.items() if k not in self.no_query and v is not 'anything'}
 
@@ -87,6 +133,19 @@ class DBQuery:
         return available_options
 
     def get_db_results_for_slots(self, current_informs):
+        """
+        Counts occurrences of each current inform slot (key and value) in the database items.
+
+        For each item in the database and each current inform slot if that slot is in the database item (matches key
+        and value) then increment the count for that key by 1.
+
+        Parameters:
+            current_informs (dict): The current informs/constraints
+
+        Returns:
+            dict: Each key in current_informs with the count of the number of matches for that key
+        """
+
         # The items (key, value) of the current informs are used as a key to the cached_db_slot
         inform_items = frozenset(current_informs.items())
         # A dict of the inform keys and their counts as stored (or not stored) in the cached_db_slot

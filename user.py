@@ -1,19 +1,41 @@
 from dialogue_config import FAIL, SUCCESS, usersim_intents, all_slots
+from utils import reward_function
 
 
 class User:
     def __init__(self, constants):
+        """
+        The constructor for User.
+
+        Parameters:
+            constants (dict): Loaded constants as dict
+        """
         self.max_round = constants['run']['max_round_num']
 
     def reset(self):
+        """
+        Reset the user.
+
+        Returns:
+            dict: The user response
+        """
+
         return self._return_response()
 
     def _return_response(self):
-        # Format must be like this: request/moviename: MIB, date: friday/time, cost, reviews
-        # or inform/moviename: zooptopia/
-        # or request//time
-        # or done//
-        # intents, informs keys and values, and request keys and values cannot conain / , :
+        """
+        Asks user in console for response then receives a response as input.
+
+        Format must be like this: request/moviename: MIB, date: friday/time, cost, reviews
+        or inform/moviename: zooptopia/
+        or request//time
+        or done//
+        intents, informs keys and values, and request keys and values cannot conain / , :
+
+        Returns:
+            dict: The response of the user
+        """
+
         response = {'intent': '', 'inform_slots': {}, 'request_slots': {}}
         while True:
             input_string = input('Response: ')
@@ -48,15 +70,35 @@ class User:
 
         return response
 
-    def _return_succ(self):
-        # Either -1, 0, 1
-        succ = -2
-        while succ not in (-1, 0, 1):
-            succ = int(input('Succ.: '))
-        return succ
+    def _return_success(self):
+        """
+        Ask the user in console to input success (-1, 0 or 1) for (loss, neither loss nor win, win).
+
+        Returns:
+            int: Success: -1, 0 or 1
+        """
+
+        success = -2
+        while success not in (-1, 0, 1):
+            success = int(input('Success?: '))
+        return success
 
     def step(self, agent_action, round_num):
-        # Assertions
+        """
+        Return the user's response, reward, done and success.
+
+        Parameters:
+            agent_action (dict): The current action of the agent
+            round_num (int): The current round number
+
+        Returns:
+            dict: User response
+            int: Reward
+            bool: Done flag
+            int: Success: -1, 0 or 1 for loss, neither win nor loss, win
+        """
+
+        # Assertions ----
         # No unk in agent action informs
         for value in agent_action['inform_slots'].values():
             assert value != 'UNK'
@@ -64,33 +106,27 @@ class User:
         # No PLACEHOLDER in agent_action at all
         for value in agent_action['request_slots'].values():
             assert value != 'PLACEHOLDER'
+        # ---------------
 
         print('Agent Action: {}'.format(agent_action))
 
         done = False
         user_response = {'intent': '', 'request_slots': {}, 'inform_slots': {}}
+
         # First check round num, if past max then fail
         if round_num > self.max_round:
-            succ = FAIL
+            success = FAIL
             user_response['intent'] = 'done'
         else:
             user_response = self._return_response()
-            succ = self._return_succ()
+            success = self._return_success()
 
-        if succ == FAIL or succ == SUCCESS:
+        if success == FAIL or success == SUCCESS:
             done = True
 
         assert 'UNK' not in user_response['inform_slots'].values()
         assert 'PLACEHOLDER' not in user_response['request_slots'].values()
 
-        reward = self._reward_function(succ)
+        reward = reward_function(success, self.max_round)
 
-        return user_response, reward, done, True if succ is 1 else False
-
-    def _reward_function(self, succ):
-        reward = -1
-        if succ == FAIL:
-            reward += -self.max_round
-        elif succ == SUCCESS:
-            reward += 2 * self.max_round
-        return reward
+        return user_response, reward, done, True if success is 1 else False
