@@ -25,7 +25,7 @@
   },
   "emc": {
     "slot_error_mode": 0,
-    "slot_error_prob": 0.30,
+    "slot_error_prob": 0.05,
     "intent_error_prob": 0.0
   }
 }
