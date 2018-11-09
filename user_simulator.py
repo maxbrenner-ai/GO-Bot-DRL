@@ -1,4 +1,5 @@
-from dialogue_config import usersim_default_key, FAIL, NO_OUTCOME, SUCCESS, usersim_required_init_inform_keys, no_query_keys
+from dialogue_config import usersim_default_key, FAIL, NO_OUTCOME, SUCCESS, usersim_required_init_inform_keys, \
+    no_query_keys
 from utils import reward_function
 import random, copy
 
@@ -170,7 +171,8 @@ class UserSimulator:
         for inf_key in self.goal['inform_slots']:
             assert self.state['history_slots'].get(inf_key, False) or self.state['rest_slots'].get(inf_key, False)
         for req_key in self.goal['request_slots']:
-            assert self.state['history_slots'].get(req_key, False) or self.state['rest_slots'].get(req_key, False), req_key
+            assert self.state['history_slots'].get(req_key, False) or self.state['rest_slots'].get(req_key,
+                                                                                                   False), req_key
         # Anything in the rest should be in the goal
         for key in self.state['rest_slots']:
             assert self.goal['inform_slots'].get(key, False) or self.goal['request_slots'].get(key, False)

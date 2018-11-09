@@ -45,7 +45,7 @@ class ErrorModelController:
                     self._slot_noise(key, informs_dict)
                 elif self.slot_error_mode == 2:  # delete the slot
                     self._slot_remove(key, informs_dict)
-                else: # Combine all three
+                else:  # Combine all three
                     rand_choice = random.random()
                     if rand_choice <= 0.33:
                         self._slot_value_noise(key, informs_dict)

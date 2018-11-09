@@ -7,7 +7,6 @@ import json
 from user import User
 from utils import remove_empty_slots
 
-
 # Load Constants json into a dict
 CONSTANTS_FILE_PATH = 'constants.json'
 with open(CONSTANTS_FILE_PATH) as f:

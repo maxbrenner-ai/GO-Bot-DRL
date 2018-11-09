@@ -21,8 +21,12 @@ usersim_required_init_inform_keys = ['moviename']
 #######################################
 
 # Possible inform and request slots for the agent
-agent_inform_slots = ['moviename', 'theater', 'starttime', 'date', 'genre', 'state', 'city', 'zip', 'critic_rating', 'mpaa_rating', 'distanceconstraints', 'video_format', 'theater_chain', 'price', 'actor', 'description', 'other', 'numberofkids', usersim_default_key]
-agent_request_slots = ['moviename', 'theater', 'starttime', 'date', 'numberofpeople', 'genre', 'state', 'city', 'zip', 'critic_rating', 'mpaa_rating', 'distanceconstraints', 'video_format', 'theater_chain', 'price', 'actor', 'description', 'other', 'numberofkids']
+agent_inform_slots = ['moviename', 'theater', 'starttime', 'date', 'genre', 'state', 'city', 'zip', 'critic_rating',
+                      'mpaa_rating', 'distanceconstraints', 'video_format', 'theater_chain', 'price', 'actor',
+                      'description', 'other', 'numberofkids', usersim_default_key]
+agent_request_slots = ['moviename', 'theater', 'starttime', 'date', 'numberofpeople', 'genre', 'state', 'city', 'zip',
+                       'critic_rating', 'mpaa_rating', 'distanceconstraints', 'video_format', 'theater_chain', 'price',
+                       'actor', 'description', 'other', 'numberofkids']
 
 # Possible actions for agent
 agent_actions = [
@@ -51,7 +55,6 @@ no_query_keys = ['numberofpeople', usersim_default_key]
 FAIL = -1
 NO_OUTCOME = 0
 SUCCESS = 1
-
 
 # All possible intents (for one-hot conversion in ST.get_state())
 all_intents = ['inform', 'request', 'done', 'match_found', 'thanks', 'reject']
