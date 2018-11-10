@@ -81,7 +81,6 @@ class DBQuery:
                 # This will add 1 to 0 if this is the first time this value has been encountered, or it will add 1
                 # to whatever was already in there
                 slot_values[slot_value] += 1
-        print(slot_values)
         return slot_values
 
     def get_db_results(self, constraints):

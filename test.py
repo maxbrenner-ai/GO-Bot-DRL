@@ -2,48 +2,63 @@ from user_simulator import UserSimulator
 from error_model_controller import ErrorModelController
 from dqn_agent import DQNAgent
 from state_tracker import StateTracker
-import pickle
-import json
+import pickle, argparse, json
 from user import User
 from utils import remove_empty_slots
 
-# Load Constants json into a dict
-CONSTANTS_FILE_PATH = 'constants.json'
-with open(CONSTANTS_FILE_PATH) as f:
-    constants = json.load(f)
 
-# Load file path constants
-file_path_dict = constants['db_file_paths']
-DATABASE_FILE_PATH = file_path_dict['database']
-DICT_FILE_PATH = file_path_dict['dict']
-USER_GOALS_FILE_PATH = file_path_dict['user_goals']
+if __name__ == "__main__":
+    # Can provide constants file path in args OR run it as is and change 'CONSTANTS_FILE_PATH' below
+    # 1) In terminal: python test.py --constants_path "constants.json"
+    # 2) Run this file as is
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--constants_path', dest='constants_path', type=str, default='')
+    args = parser.parse_args()
+    params = vars(args)
 
-# Load run constants
-run_dict = constants['run']
-USE_USERSIM = run_dict['usersim']
-NUM_EP_TEST = run_dict['num_ep_run']
-MAX_ROUND_NUM = run_dict['max_round_num']
+    # Load constants json into dict
+    CONSTANTS_FILE_PATH = 'constants.json'
+    if len(params['constants_path']) > 0:
+        constants_file = params['constants_path']
+    else:
+        constants_file = CONSTANTS_FILE_PATH
 
-# Load movie DB
-database = pickle.load(open(DATABASE_FILE_PATH, 'rb'), encoding='latin1')
+    with open(constants_file) as f:
+        constants = json.load(f)
 
-# Clean DB
-remove_empty_slots(database)
+    # Load file path constants
+    file_path_dict = constants['db_file_paths']
+    DATABASE_FILE_PATH = file_path_dict['database']
+    DICT_FILE_PATH = file_path_dict['dict']
+    USER_GOALS_FILE_PATH = file_path_dict['user_goals']
 
-# Load movie dict
-db_dict = pickle.load(open(DICT_FILE_PATH, 'rb'), encoding='latin1')
+    # Load run constants
+    run_dict = constants['run']
+    USE_USERSIM = run_dict['usersim']
+    NUM_EP_TEST = run_dict['num_ep_run']
+    MAX_ROUND_NUM = run_dict['max_round_num']
 
-# Load goal file
-user_goals = pickle.load(open(USER_GOALS_FILE_PATH, 'rb'), encoding='latin1')
+    # Load movie DB
+    # Note: If you get an unpickling error here then run 'pickle_converter.py' and it should fix it
+    database = pickle.load(open(DATABASE_FILE_PATH, 'rb'), encoding='latin1')
 
-# Init. Objects
-if USE_USERSIM:
-    user = UserSimulator(user_goals, constants, database)
-else:
-    user = User(constants)
-emc = ErrorModelController(db_dict, constants)
-state_tracker = StateTracker(database, constants)
-dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)
+    # Clean DB
+    remove_empty_slots(database)
+
+    # Load movie dict
+    db_dict = pickle.load(open(DICT_FILE_PATH, 'rb'), encoding='latin1')
+
+    # Load goal file
+    user_goals = pickle.load(open(USER_GOALS_FILE_PATH, 'rb'), encoding='latin1')
+
+    # Init. Objects
+    if USE_USERSIM:
+        user = UserSimulator(user_goals, constants, database)
+    else:
+        user = User(constants)
+    emc = ErrorModelController(db_dict, constants)
+    state_tracker = StateTracker(database, constants)
+    dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)
 
 
 def test_run():
@@ -96,5 +111,5 @@ def episode_reset():
     dqn_agent.reset()
 
 
-if __name__ == "__main__":
-    test_run()
+
+test_run()
