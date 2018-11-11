@@ -6,7 +6,7 @@ Based off of the code repo [TC-Bot](https://github.com/MiuLab/TC-Bot) and paper 
 
 This shows how to train a simple DQN agent with deep reinforcement learning as a goal-oriented chatbot using a simple user simulator. The code is a simplified version of TC-Bot by MiuLab with the main difference being that this code does not include NLG or NLU components but just trains the dialogue manager. NL components are not necessary to understand how a GO chatbot is trained with DRL and therefore are not implemented.
 
-Here is a diagram from the paper for TC-Bot, and is similar to the flow of dialogue used in this project other than the LU component:
+Here is a diagram from the paper for TC-Bot, and is similar to the flow of dialogue used in this project other than the LU and NLG components:
 
 ![Diagram](https://github.com/maxbren/GO-Bot_DRL/blob/master/assets/paper_diagram.PNG)
 
