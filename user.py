@@ -28,9 +28,9 @@ class User:
         """
         Asks user in console for response then receives a response as input.
 
-        Format must be like this: request/moviename: MIB, date: friday/time, cost, reviews
+        Format must be like this: request/moviename: room, date: friday/starttime, city, theater
         or inform/moviename: zooptopia/
-        or request//time
+        or request//starttime
         or done//
         intents, informs keys and values, and request keys and values cannot conain / , :
 
