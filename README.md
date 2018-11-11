@@ -23,11 +23,13 @@ I will be posting a multi-part tutorial series on [Medium](https://medium.com) w
 ## How to Run
 You can train an agent from scratch with ```python train.py```. 
 
-In constants.json you can change hyperparameters including "save_weights_file_path" and "load_weights_file_path" (both relative paths) to save and load weights respectively. Weights for both target (tar) and behavior (beh_ keras models are saved every time the current success rate is at a new high. 
+In constants.json you can change hyperparameters including "save_weights_file_path" and "load_weights_file_path" (both relative paths) to save and load weights respectively. For example, to use the pretrained weights in the weights folder, set the value of  "load_weights_file_path" to "weights/model.h5". Weights for both target (tar) and behavior (beh) keras models are saved every time the current success rate is at a new high. 
 
 You can also test an agent with ```python test.py```. But make sure to load weights by setting "load_weights_file_path" in constants.json to a relative path with both behavior and target weights. 
 
 All the constants are pretty self explanatory other than "vanilla" under agent which means DQN (true) or Double DQN (false). Defualt is vanilla DQN. 
+
+Note: If you get an unpickling error in [train](https://github.com/maxbren/GO-Bot_DRL/blob/1f71df5f348d6846a07642a7629b777f179ccdff/train.py#L45) or [test](https://github.com/maxbren/GO-Bot_DRL/blob/1f71df5f348d6846a07642a7629b777f179ccdff/test.py#L43) then run 'pickle_converter.py' and that should fix it
 
 ## Test (or Train) with an Actual User
 You can test the agent by inputing your own actions as the user (instead of using a user sim) by setting "usersim" under run in constants.json to false. You input an action and a success indicator every step of an episode/conversation in console. The format for the action input is: intent/inform slots/request slots.
