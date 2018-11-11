@@ -36,7 +36,7 @@ You can test the agent by inputing your own actions as the user (instead of usin
 
 Example action inputs:
 - request/moviename: room, date: friday/starttime, city, theater
-- inform/moviename: zooptopia/
+- inform/moviename: zootopia/
 - request//starttime
 - done//
 
