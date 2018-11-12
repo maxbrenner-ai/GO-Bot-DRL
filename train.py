@@ -4,6 +4,7 @@ from dqn_agent import DQNAgent
 from state_tracker import StateTracker
 import pickle, argparse, json, math
 from utils import remove_empty_slots
+from user import User
 
 
 if __name__ == "__main__":
@@ -54,7 +55,10 @@ if __name__ == "__main__":
     user_goals = pickle.load(open(USER_GOALS_FILE_PATH, 'rb'), encoding='latin1')
 
     # Init. Objects
-    user_sim = UserSimulator(user_goals, constants, database)
+    if USE_USERSIM:
+        user = UserSimulator(user_goals, constants, database)
+    else:
+        user = User(constants)
     emc = ErrorModelController(db_dict, constants)
     state_tracker = StateTracker(database, constants)
     dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)
@@ -87,12 +91,12 @@ def warmup_run():
             # Update state tracker with the agent's action
             round_num = state_tracker.update_state_agent(agent_action)
             # User takes action given agent action
-            user_action, reward, done, success = user_sim.step(agent_action, round_num)
+            user_action, reward, done, success = user.step(agent_action, round_num)
             ep_reward += reward
             if not done:
                 # Infuse error into semantic frame level of user action
                 emc.infuse_error(user_action)
-                # Update state tracker with user action
+            # Update state tracker with user action
             state_tracker.update_state_user(user_action)
             # Add memory
             next_state = state_tracker.get_state(done)
@@ -133,7 +137,7 @@ def train_run():
             state = state_tracker.get_state()
             agent_action_index, agent_action = dqn_agent.get_action(state)
             round_num = state_tracker.update_state_agent(agent_action)
-            user_action, reward, done, success = user_sim.step(agent_action, round_num)
+            user_action, reward, done, success = user.step(agent_action, round_num)
             episode_reward += reward
             period_rew_total += reward
             if not done:
@@ -183,14 +187,13 @@ def episode_reset():
     # First reset the state tracker
     state_tracker.reset()
     # Then pick an init user action
-    user_action = user_sim.reset()
+    user_action = user.reset()
     # Infuse with error
-    user_error_action = emc.infuse_error(user_action)
+    emc.infuse_error(user_action)
     # And update state tracker
-    state_tracker.update_state_user(user_error_action)
+    state_tracker.update_state_user(user_action)
     # Finally, reset agent
     dqn_agent.reset()
-
 
 
 warmup_run()

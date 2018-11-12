@@ -104,12 +104,11 @@ def episode_reset():
     # Then pick an init user action
     user_action = user.reset()
     # Infuse with error
-    user_error_action = emc.infuse_error(user_action)
+    emc.infuse_error(user_action)
     # And update state tracker
-    state_tracker.update_state_user(user_error_action)
+    state_tracker.update_state_user(user_action)
     # Finally, reset agent
     dqn_agent.reset()
-
 
 
 test_run()

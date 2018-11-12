@@ -55,7 +55,6 @@ class ErrorModelController:
                         self._slot_remove(key, informs_dict)
         if random.random() < self.intent_error_prob:  # add noise for intent level
             frame['intent'] = random.choice(self.intents)
-        return frame
 
     def _slot_value_noise(self, key, informs_dict):
         """
