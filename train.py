@@ -80,7 +80,6 @@ def warmup_run():
     while not done_warmup:
         episode_reset()
         ep += 1
-        ep_step = 0
         ep_reward = 0
         done = False
         # Get initial state from state tracker
@@ -104,12 +103,10 @@ def warmup_run():
             # Update state
             state = next_state
 
-            ep_step += 1
             total_step += 1
 
-            if total_step == WARMUP_MEM or dqn_agent.is_memory_full():
-                done_warmup = True
-                done = True
+        if total_step == WARMUP_MEM or dqn_agent.is_memory_full():
+            break
     print('...Warmup Ended')
 
 
