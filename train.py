@@ -74,13 +74,10 @@ def warmup_run():
     """
 
     print('Warmup Started...')
-    ep = 0
     total_step = 0
     done_warmup = False
     while not done_warmup:
         episode_reset()
-        ep += 1
-        ep_reward = 0
         done = False
         # Get initial state from state tracker
         state = state_tracker.get_state()
@@ -91,7 +88,6 @@ def warmup_run():
             round_num = state_tracker.update_state_agent(agent_action)
             # User takes action given agent action
             user_action, reward, done, success = user.step(agent_action, round_num)
-            ep_reward += reward
             if not done:
                 # Infuse error into semantic frame level of user action
                 emc.infuse_error(user_action)
