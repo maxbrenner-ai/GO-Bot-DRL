@@ -83,9 +83,9 @@ def warmup_run():
         ep_step = 0
         ep_reward = 0
         done = False
+        # Get initial state from state tracker
+        state = state_tracker.get_state()
         while not done:
-            # Get state tracker state
-            state = state_tracker.get_state()
             # Agent takes action given state tracker's representation of dialogue
             agent_action_index, agent_action = dqn_agent.get_action(state, use_rule=True)
             # Update state tracker with the agent's action
@@ -101,6 +101,8 @@ def warmup_run():
             # Add memory
             next_state = state_tracker.get_state(done)
             dqn_agent.add_experience(state, agent_action_index, reward, next_state, done)
+            # Update state
+            state = next_state
 
             ep_step += 1
             total_step += 1
@@ -133,8 +135,8 @@ def train_run():
         episode += 1
         episode_reward = 0
         done = False
+        state = state_tracker.get_state()
         while not done:
-            state = state_tracker.get_state()
             agent_action_index, agent_action = dqn_agent.get_action(state)
             round_num = state_tracker.update_state_agent(agent_action)
             user_action, reward, done, success = user.step(agent_action, round_num)
@@ -145,6 +147,7 @@ def train_run():
             state_tracker.update_state_user(user_action)
             next_state = state_tracker.get_state(done)
             dqn_agent.add_experience(state, agent_action_index, reward, next_state, done)
+            state = next_state
 
         period_min_reward = min(period_min_reward, episode_reward)
         period_max_reward = max(period_max_reward, episode_reward)

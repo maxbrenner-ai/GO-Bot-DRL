@@ -77,9 +77,9 @@ def test_run():
         episode += 1
         ep_reward = 0
         done = False
+        # Get initial state from state tracker
+        state = state_tracker.get_state()
         while not done:
-            # Get state tracker state
-            state = state_tracker.get_state()
             # Agent takes action given state tracker's representation of dialogue
             agent_action_index, agent_action = dqn_agent.get_action(state)
             # Update state tracker with the agent's action
@@ -92,6 +92,8 @@ def test_run():
                 emc.infuse_error(user_action)
             # Update state tracker with user action
             state_tracker.update_state_user(user_action)
+            # Grab "next state" as state
+            state = state_tracker.get_state()
         print('Episode: {} Success: {} Reward: {}'.format(episode, success, ep_reward))
     print('...Testing Ended')
 
