@@ -125,12 +125,10 @@ def train_run():
     while episode < NUM_EP_TRAIN:
         episode_reset()
         episode += 1
-        episode_reward = 0
         done = False
         state = state_tracker.get_state()
         while not done:
             next_state, reward, done, success = run_round(state)
-            episode_reward += reward
             period_reward_total += reward
             state = next_state
 
