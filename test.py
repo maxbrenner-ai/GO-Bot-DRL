@@ -93,7 +93,7 @@ def test_run():
             # Update state tracker with user action
             state_tracker.update_state_user(user_action)
             # Grab "next state" as state
-            state = state_tracker.get_state()
+            state = state_tracker.get_state(done)
         print('Episode: {} Success: {} Reward: {}'.format(episode, success, ep_reward))
     print('...Testing Ended')
 

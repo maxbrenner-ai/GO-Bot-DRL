@@ -64,6 +64,25 @@ if __name__ == "__main__":
     dqn_agent = DQNAgent(state_tracker.get_state_size(), constants)
 
 
+def run_round(state, warmup=False):
+    # 1) Agent takes action given state tracker's representation of dialogue (state)
+    agent_action_index, agent_action = dqn_agent.get_action(state, use_rule=warmup)
+    # 2) Update state tracker with the agent's action
+    round_num = state_tracker.update_state_agent(agent_action)
+    # 3) User takes action given agent action
+    user_action, reward, done, success = user.step(agent_action, round_num)
+    if not done:
+        # 4) Infuse error into semantic frame level of user action
+        emc.infuse_error(user_action)
+    # 5) Update state tracker with user action
+    state_tracker.update_state_user(user_action)
+    # 6) Get next state and add experience
+    next_state = state_tracker.get_state(done)
+    dqn_agent.add_experience(state, agent_action_index, reward, next_state, done)
+
+    return next_state, reward, done, success
+
+
 def warmup_run():
     """
     Runs the warmup stage of training which is used to fill the agents memory.
@@ -75,34 +94,17 @@ def warmup_run():
 
     print('Warmup Started...')
     total_step = 0
-    done_warmup = False
-    while not done_warmup:
+    while total_step != WARMUP_MEM and not dqn_agent.is_memory_full():
+        # Reset episode
         episode_reset()
         done = False
         # Get initial state from state tracker
         state = state_tracker.get_state()
         while not done:
-            # Agent takes action given state tracker's representation of dialogue
-            agent_action_index, agent_action = dqn_agent.get_action(state, use_rule=True)
-            # Update state tracker with the agent's action
-            round_num = state_tracker.update_state_agent(agent_action)
-            # User takes action given agent action
-            user_action, reward, done, success = user.step(agent_action, round_num)
-            if not done:
-                # Infuse error into semantic frame level of user action
-                emc.infuse_error(user_action)
-            # Update state tracker with user action
-            state_tracker.update_state_user(user_action)
-            # Add memory
-            next_state = state_tracker.get_state(done)
-            dqn_agent.add_experience(state, agent_action_index, reward, next_state, done)
-            # Update state
+            next_state, _, done, _ = run_round(state, warmup=True)
+            total_step += 1
             state = next_state
 
-            total_step += 1
-
-        if total_step == WARMUP_MEM or dqn_agent.is_memory_full():
-            break
     print('...Warmup Ended')
 
 
@@ -117,54 +119,38 @@ def train_run():
 
     print('Training Started...')
     episode = 0
-    period_rew_total = 0
-    period_min_reward = math.inf
-    period_max_reward = -math.inf
+    period_reward_total = 0
     period_success_total = 0
     success_rate_best = 0.0
     while episode < NUM_EP_TRAIN:
         episode_reset()
-        # Inner loop (by conversation)
         episode += 1
         episode_reward = 0
         done = False
         state = state_tracker.get_state()
         while not done:
-            agent_action_index, agent_action = dqn_agent.get_action(state)
-            round_num = state_tracker.update_state_agent(agent_action)
-            user_action, reward, done, success = user.step(agent_action, round_num)
+            next_state, reward, done, success = run_round(state)
             episode_reward += reward
-            period_rew_total += reward
-            if not done:
-                emc.infuse_error(user_action)
-            state_tracker.update_state_user(user_action)
-            next_state = state_tracker.get_state(done)
-            dqn_agent.add_experience(state, agent_action_index, reward, next_state, done)
+            period_reward_total += reward
             state = next_state
 
-        period_min_reward = min(period_min_reward, episode_reward)
-        period_max_reward = max(period_max_reward, episode_reward)
+        period_success_total += success
 
-        if success:
-            period_success_total += 1
-
+        # Train
         if episode % TRAIN_FREQ == 0:
             # Check success rate
             success_rate = period_success_total / TRAIN_FREQ
-            avg_reward = period_rew_total / TRAIN_FREQ
+            avg_reward = period_reward_total / TRAIN_FREQ
             # Flush
             if success_rate >= success_rate_best and success_rate >= SUCCESS_RATE_THRESHOLD:
                 dqn_agent.empty_memory()
             # Update current best success rate
             if success_rate > success_rate_best:
-                print('Episode: {} NEW BEST SUCCESS RATE: {} Avg Reward: {} Min Rew: {} Max Rew: {}'
-                      .format(episode, success_rate, avg_reward, period_min_reward, period_max_reward))
+                print('Episode: {} NEW BEST SUCCESS RATE: {} Avg Reward: {}' .format(episode, success_rate, avg_reward))
                 success_rate_best = success_rate
                 dqn_agent.save_weights()
             period_success_total = 0
-            period_rew_total = 0
-            period_min_reward = math.inf
-            period_max_reward = -math.inf
+            period_reward_total = 0
             # Copy
             dqn_agent.copy()
             # Train
