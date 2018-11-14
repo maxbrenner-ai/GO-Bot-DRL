@@ -100,6 +100,17 @@ class DQNAgent:
                 return self._dqn_action(state)
 
     def _rule_action(self):
+        """
+        Returns a rule-based policy action.
+
+        Selects the next action of a simple rule-based policy.
+
+        Returns:
+            int: The index of the action in the possible actions
+            dict: The action/response itself
+
+        """
+
         if self.rule_current_slot_index < len(self.rule_request_set):
             slot = self.rule_request_set[self.rule_current_slot_index]
             self.rule_current_slot_index += 1
