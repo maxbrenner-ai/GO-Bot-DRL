@@ -42,7 +42,13 @@ class StateTracker:
         self.current_informs = {}
         # A list of the dialogues (dicts) by the agent and user so far in the conversation
         self.history = []
-        self.round_num = 1
+        self.round_num = 0
+
+    def print_history(self):
+        """Helper function if you want to see the current history action by action."""
+
+        for action in self.history:
+            print(action)
 
     def get_state(self, done=False):
         """
@@ -141,9 +147,6 @@ class StateTracker:
                                  'request_slots': dict) and changed to dict('intent': '', 'inform_slots': {},
                                  'request_slots': {}, 'round': int, 'speaker': 'Agent')
 
-        Returns:
-            int: The current round_num
-
         """
 
         if agent_action['intent'] == 'inform':
@@ -169,8 +172,6 @@ class StateTracker:
             self.current_informs[self.match_key] = agent_action['inform_slots'][self.match_key]
         agent_action.update({'round': self.round_num, 'speaker': 'Agent'})
         self.history.append(agent_action)
-        self.round_num += 1
-        return self.round_num
 
     def update_state_user(self, user_action):
         """
@@ -189,3 +190,4 @@ class StateTracker:
             self.current_informs[key] = value
         user_action.update({'round': self.round_num, 'speaker': 'User'})
         self.history.append(user_action)
+        self.round_num += 1

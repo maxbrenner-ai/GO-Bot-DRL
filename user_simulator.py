@@ -99,7 +99,7 @@ class UserSimulator:
 
         return user_response
 
-    def step(self, agent_action, round_num):
+    def step(self, agent_action):
         """
         Return the response of the user sim. to the agent by using rules that simulate a user.
 
@@ -108,7 +108,6 @@ class UserSimulator:
 
         Parameters:
             agent_action (dict): The agent action that the user sim. responds to
-            round_num (int): The current round
 
         Returns:
             dict: User sim. response
@@ -132,8 +131,8 @@ class UserSimulator:
 
         done = False
         success = NO_OUTCOME
-        # First check round num, if past max then fail
-        if round_num > self.max_round:
+        # First check round num, if equal to max then fail
+        if agent_action['round'] == self.max_round:
             done = True
             success = FAIL
             self.state['intent'] = 'done'

@@ -85,13 +85,12 @@ class User:
             success = int(input('Success?: '))
         return success
 
-    def step(self, agent_action, round_num):
+    def step(self, agent_action):
         """
         Return the user's response, reward, done and success.
 
         Parameters:
             agent_action (dict): The current action of the agent
-            round_num (int): The current round number
 
         Returns:
             dict: User response
@@ -115,8 +114,8 @@ class User:
         done = False
         user_response = {'intent': '', 'request_slots': {}, 'inform_slots': {}}
 
-        # First check round num, if past max then fail
-        if round_num > self.max_round:
+        # First check round num, if equal to max then fail
+        if agent_action['round'] == self.max_round:
             success = FAIL
             user_response['intent'] = 'done'
         else:

@@ -68,9 +68,9 @@ def run_round(state, warmup=False):
     # 1) Agent takes action given state tracker's representation of dialogue (state)
     agent_action_index, agent_action = dqn_agent.get_action(state, use_rule=warmup)
     # 2) Update state tracker with the agent's action
-    round_num = state_tracker.update_state_agent(agent_action)
+    state_tracker.update_state_agent(agent_action)
     # 3) User takes action given agent action
-    user_action, reward, done, success = user.step(agent_action, round_num)
+    user_action, reward, done, success = user.step(agent_action)
     if not done:
         # 4) Infuse error into semantic frame level of user action
         emc.infuse_error(user_action)

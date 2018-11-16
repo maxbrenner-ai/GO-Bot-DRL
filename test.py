@@ -83,9 +83,9 @@ def test_run():
             # Agent takes action given state tracker's representation of dialogue
             agent_action_index, agent_action = dqn_agent.get_action(state)
             # Update state tracker with the agent's action
-            round_num = state_tracker.update_state_agent(agent_action)
+            state_tracker.update_state_agent(agent_action)
             # User takes action given agent action
-            user_action, reward, done, success = user.step(agent_action, round_num)
+            user_action, reward, done, success = user.step(agent_action)
             ep_reward += reward
             if not done:
                 # Infuse error into semantic frame level of user action
