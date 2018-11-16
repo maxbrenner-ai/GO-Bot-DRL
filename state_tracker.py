@@ -70,7 +70,7 @@ class StateTracker:
             return self.none_state
 
         user_action = self.history[-1]
-        kb_results_dict = self.db_helper.get_db_results_for_slots(self.current_informs)
+        db_results_dict = self.db_helper.get_db_results_for_slots(self.current_informs)
         last_agent_action = self.history[-2] if len(self.history) > 1 else None
 
         # Create one-hot of intents to represent the current user action
@@ -117,16 +117,16 @@ class StateTracker:
         turn_onehot_rep[self.round_num - 1] = 1.0
 
         # Representation of DB query results (scaled counts)
-        kb_count_rep = np.zeros((self.num_slots + 1,)) + kb_results_dict['matching_all_constraints'] / 100.
-        for key in kb_results_dict.keys():
+        kb_count_rep = np.zeros((self.num_slots + 1,)) + db_results_dict['matching_all_constraints'] / 100.
+        for key in db_results_dict.keys():
             if key in self.slots_dict:
-                kb_count_rep[self.slots_dict[key]] = kb_results_dict[key] / 100.
+                kb_count_rep[self.slots_dict[key]] = db_results_dict[key] / 100.
 
         # Representation of DB query results (binary)
-        kb_binary_rep = np.zeros((self.num_slots + 1,)) + np.sum(kb_results_dict['matching_all_constraints'] > 0.)
-        for key in kb_results_dict.keys():
+        kb_binary_rep = np.zeros((self.num_slots + 1,)) + np.sum(db_results_dict['matching_all_constraints'] > 0.)
+        for key in db_results_dict.keys():
             if key in self.slots_dict:
-                kb_binary_rep[self.slots_dict[key]] = np.sum(kb_results_dict[key] > 0.)
+                kb_binary_rep[self.slots_dict[key]] = np.sum(db_results_dict[key] > 0.)
 
         state_representation = np.hstack(
             [user_act_rep, user_inform_slots_rep, user_request_slots_rep, agent_act_rep, agent_inform_slots_rep,
