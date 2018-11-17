@@ -228,8 +228,8 @@ class UserSimulator:
                 self.state['inform_slots'][key_choice] = value_choice
                 self.state['rest_slots'].pop(key_choice)
                 self.state['history_slots'][key_choice] = value_choice
-
         # Fourth and Final Case: otherwise the user sim does not care about the slot being requested, then inform
+        # 'anything' as the value of the requested slot
         else:
             self.state['intent'] = 'inform'
             self.state['inform_slots'][agent_request_key] = 'anything'
