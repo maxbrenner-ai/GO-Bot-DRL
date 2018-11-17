@@ -231,6 +231,7 @@ class UserSimulator:
         # Fourth and Final Case: otherwise the user sim does not care about the slot being requested, then inform
         # 'anything' as the value of the requested slot
         else:
+            assert agent_request_key not in self.state['rest_slots']
             self.state['intent'] = 'inform'
             self.state['inform_slots'][agent_request_key] = 'anything'
             self.state['request_slots'].clear()
