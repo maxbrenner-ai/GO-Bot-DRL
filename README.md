@@ -12,6 +12,8 @@ Here is a diagram from the paper for TC-Bot, and is similar to the flow of dialo
 
 In addition to removing NL, there are changes to the success conditions, the DQN agent optimizer and a few other minor changes. Therefore, accuracy should not be compared directly between TC-Bot and this repo. 
 
+The database is of movie tickets, the same DB used in TC-Bot. Both the pickle and text versions of the data can be seen in the [data directory](https://github.com/maxbren/GO-Bot-DRL/tree/master/data).
+
 ## Important Note
 I will be posting a multi-part tutorial series on [Medium](https://medium.com) within the next couple months that goes through this code in detail and explains how each part works including: DRL training, state tracking and user simulators (and everything in between).
 
