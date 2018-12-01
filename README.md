@@ -15,7 +15,7 @@ In addition to removing NL, there are changes to the success conditions, the DQN
 The database is of movie tickets, the same DB used in TC-Bot. Both the pickle and text versions of the data can be seen in the [data directory](https://github.com/maxbren/GO-Bot-DRL/tree/master/data).
 
 ## Important Note
-I will be posting a multi-part tutorial series on [Medium](https://medium.com) within the next couple months that goes through this code in detail and explains how each part works including: DRL training, state tracking and user simulators (and everything in between).
+A 5-part tutorial series that describes and goes through this code in detail can be found on medium [here](https://medium.com/@maxbrenner110/training-a-goal-oriented-chatbot-with-deep-reinforcement-learning-part-i-introduction-and-dce3af21d383)!
 
 ## Dependencies
 - Python >= 3.5
